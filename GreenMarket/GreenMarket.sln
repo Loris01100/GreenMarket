@@ -1,0 +1,46 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "GreenMarket.API", "GreenMarket.API\GreenMarket.API.csproj", "{557A4FED-A170-48FC-8B46-F2170EAFA692}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "GreenMarket.Application", "GreenMarket.Application\GreenMarket.Application.csproj", "{1175DF7A-40EB-4146-AD21-7B4A2FEB813D}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "GreenMarket.Domain", "GreenMarket.Domain\GreenMarket.Domain.csproj", "{D48A2059-3DA2-4DFB-BCAD-22587E844072}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "GreenMarket.Shared", "GreenMarket.Shared\GreenMarket.Shared.csproj", "{167ACEF8-2EE0-49B8-8572-8A7E4F8E6F16}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "GreenMarket.Client", "GreenMarket.Client\GreenMarket.Client.csproj", "{6EE35B91-DCCA-4727-80BA-534AB805B42B}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "GreenMarket.Tests", "GreenMarket.Tests\GreenMarket.Tests.csproj", "{5FD255E0-6B6C-4C07-82AB-215C1F3D5EC3}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{557A4FED-A170-48FC-8B46-F2170EAFA692}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{557A4FED-A170-48FC-8B46-F2170EAFA692}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{557A4FED-A170-48FC-8B46-F2170EAFA692}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{557A4FED-A170-48FC-8B46-F2170EAFA692}.Release|Any CPU.Build.0 = Release|Any CPU
+		{1175DF7A-40EB-4146-AD21-7B4A2FEB813D}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{1175DF7A-40EB-4146-AD21-7B4A2FEB813D}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{1175DF7A-40EB-4146-AD21-7B4A2FEB813D}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{1175DF7A-40EB-4146-AD21-7B4A2FEB813D}.Release|Any CPU.Build.0 = Release|Any CPU
+		{D48A2059-3DA2-4DFB-BCAD-22587E844072}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{D48A2059-3DA2-4DFB-BCAD-22587E844072}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{D48A2059-3DA2-4DFB-BCAD-22587E844072}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{D48A2059-3DA2-4DFB-BCAD-22587E844072}.Release|Any CPU.Build.0 = Release|Any CPU
+		{167ACEF8-2EE0-49B8-8572-8A7E4F8E6F16}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{167ACEF8-2EE0-49B8-8572-8A7E4F8E6F16}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{167ACEF8-2EE0-49B8-8572-8A7E4F8E6F16}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{167ACEF8-2EE0-49B8-8572-8A7E4F8E6F16}.Release|Any CPU.Build.0 = Release|Any CPU
+		{6EE35B91-DCCA-4727-80BA-534AB805B42B}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{6EE35B91-DCCA-4727-80BA-534AB805B42B}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{6EE35B91-DCCA-4727-80BA-534AB805B42B}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{6EE35B91-DCCA-4727-80BA-534AB805B42B}.Release|Any CPU.Build.0 = Release|Any CPU
+		{5FD255E0-6B6C-4C07-82AB-215C1F3D5EC3}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{5FD255E0-6B6C-4C07-82AB-215C1F3D5EC3}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{5FD255E0-6B6C-4C07-82AB-215C1F3D5EC3}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{5FD255E0-6B6C-4C07-82AB-215C1F3D5EC3}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+EndGlobal

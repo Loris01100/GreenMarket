@@ -1,0 +1,14 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+    <PropertyGroup>
+        <TargetFramework>net10.0</TargetFramework>
+        <ImplicitUsings>enable</ImplicitUsings>
+        <Nullable>enable</Nullable>
+    </PropertyGroup>
+
+    <ItemGroup>
+      <ProjectReference Include="..\GreenMarket.Domain\GreenMarket.Domain.csproj" />
+      <ProjectReference Include="..\GreenMarket.Shared\GreenMarket.Shared.csproj" />
+    </ItemGroup>
+
+</Project>
