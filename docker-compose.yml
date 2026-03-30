@@ -1,0 +1,32 @@
+services:
+
+  postgres:
+    image: postgres:18.3
+    container_name: greenmarket-postgres
+    environment:
+      POSTGRES_USER: greenmarket
+      POSTGRES_PASSWORD: greenmarket
+      POSTGRES_DB: greenmarket_db
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+
+  keycloak:
+    image: quay.io/keycloak/keycloak:26.2
+    container_name: greenmarket-keycloak
+    command: start-dev
+    environment:
+      KC_BOOTSTRAP_ADMIN_USERNAME: admin
+      KC_BOOTSTRAP_ADMIN_PASSWORD: admin
+      KC_DB: postgres
+      KC_DB_URL: jdbc:postgresql://postgres:5432/greenmarket_db
+      KC_DB_USERNAME: greenmarket
+      KC_DB_PASSWORD: greenmarket
+    ports:
+      - "8080:8080"
+    depends_on:
+      - postgres
+
+volumes:
+  postgres_data:
