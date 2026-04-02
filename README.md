@@ -1,7 +1,5 @@
 # GreenMarket
 
-![CI](https://github.com/<org>/GreenMarket/actions/workflows/ci.yml/badge.svg)
-
 Application web de marché en ligne développée avec .NET 10, Blazor et Keycloak.
 
 ## Stack technique
