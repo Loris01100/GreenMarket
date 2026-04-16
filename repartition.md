@@ -6,7 +6,7 @@
 |-----|------|---------------------|
 | Dev 1 | À compléter | Utilisateur + Producteur + Auth Keycloak |
 | Dev 2 | À compléter | Produit + Catégorie + Stock |
-| Dev 3 | À compléter | Commande + Ligne de commande + Paiement Stripe |
+| Dev 3 | Julien | Commande + Ligne de commande + Paiement Stripe |
 
 ---
 
