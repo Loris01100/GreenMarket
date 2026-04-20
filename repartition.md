@@ -4,8 +4,8 @@
 
 | Dev | Nom | Domaine fonctionnel |
 |-----|------|---------------------|
-| Dev 1 | À compléter | Utilisateur + Producteur + Auth Keycloak |
-| Dev 2 | À compléter | Produit + Catégorie + Stock |
+| Dev 1 | Loris | Utilisateur + Producteur + Auth Keycloak |
+| Dev 2 | Eddy | Produit + Catégorie + Stock |
 | Dev 3 | Julien | Commande + Ligne de commande + Paiement Stripe |
 
 ---
