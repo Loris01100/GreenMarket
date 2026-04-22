@@ -6,9 +6,8 @@ using MediatR;
 
 namespace GreenMarket.Application.UseCases.Commandes;
 
-public record CreerCommande(Guid UtilisateurId, CommandeCreateDto Dto) : IRequest<CommandeDto>;
-
-public class CreerCommandeHandler : IRequestHandler<CreerCommande, CommandeDto>
+public record CreerCommandeCommand(Guid UtilisateurId, CommandeCreateDto Dto) : IRequest<CommandeDto>;
+public class CreerCommandeHandler : IRequestHandler<CreerCommandeCommand, CommandeDto>
 {
     private readonly ICommandeRepository _commandeRepository;
     private readonly IPaiementService _paiementService;
@@ -21,7 +20,7 @@ public class CreerCommandeHandler : IRequestHandler<CreerCommande, CommandeDto>
         _paiementService = paiementService;
     }
 
-    public async Task<CommandeDto> Handle(CreerCommande request, CancellationToken cancellationToken)
+     public async Task<CommandeDto> Handle(CreerCommandeCommand request, CancellationToken cancellationToken)
     {
         var lignes = request.Dto.Lignes.Select(l => new LigneCommande
         {

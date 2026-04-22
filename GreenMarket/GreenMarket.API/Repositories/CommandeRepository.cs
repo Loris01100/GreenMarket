@@ -1,5 +1,6 @@
 using GreenMarket.Domain.Entities;
 using GreenMarket.Domain.Interfaces;
+using GreenMarket.Application.Data;
 using Microsoft.EntityFrameworkCore;
 
 namespace GreenMarket.API.Repositories;
