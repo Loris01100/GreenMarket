@@ -12,11 +12,13 @@
           <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
           <PrivateAssets>all</PrivateAssets>
         </PackageReference>
+        <PackageReference Include="Stripe.net" Version="51.0.1" />
     </ItemGroup>
 
     <ItemGroup>
       <ProjectReference Include="..\GreenMarket.Application\GreenMarket.Application.csproj" />
       <ProjectReference Include="..\GreenMarket.Shared\GreenMarket.Shared.csproj" />
+      <ProjectReference Include="..\GreenMarket.Domain\GreenMarket.Domain.csproj" />
     </ItemGroup>
 
 </Project>
