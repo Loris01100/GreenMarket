@@ -1,4 +1,3 @@
-using GreenMarket.Application.Interfaces;
 using GreenMarket.Domain.Interfaces;
 using MediatR;
 

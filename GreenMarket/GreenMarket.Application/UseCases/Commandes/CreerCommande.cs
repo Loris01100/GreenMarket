@@ -1,5 +1,4 @@
 using GreenMarket.Application.DTOs;
-using GreenMarket.Application.Interfaces;
 using GreenMarket.Domain.Entities;
 using GreenMarket.Domain.Interfaces;
 using MediatR;

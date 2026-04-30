@@ -1,6 +1,6 @@
 using System.Security.Claims;
 using GreenMarket.Application.DTOs;
-using GreenMarket.Application.Interfaces;
+using GreenMarket.Domain.Interfaces;
 using GreenMarket.Application.UseCases.Commandes;
 using MediatR;
 using Microsoft.AspNetCore.Authorization;
@@ -39,7 +39,10 @@ public class CommandesController : ControllerBase
     {
         var userId = Guid.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier)!);
         var commande = await _mediator.Send(new CreerCommandeCommand(userId, dto));
-        var clientSecret = await _paiementService.CreerPaymentIntentAsync(commande.MontantTotal);
+        var clientSecret = await _paiementService.CreerPaymentIntentAsync(
+            commande.MontantTotal,
+            commandeId: commande.CommandeId
+        );
 
         return CreatedAtAction(nameof(GetMesCommandes), new { id = commande.CommandeId },
             new { Commande = commande, StripeClientSecret = clientSecret });
