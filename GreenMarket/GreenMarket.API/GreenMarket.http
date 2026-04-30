@@ -1,0 +1,155 @@
+### ============================================================
+### GreenMarket API — Fichier de tests HTTP
+### Lancer l'API : dotnet run --project GreenMarket.API
+### ============================================================
+
+@baseUrl    = http://localhost:5120
+@keycloak   = http://localhost:8080
+@realm      = greenmarket
+@clientId   = greenmarket-api
+@clientSecret = SiybvyBpLBZYooICXB5xWnvpyNd8kpZL
+
+
+### ============================================================
+### KEYCLOAK — Obtention des tokens JWT
+### ============================================================
+
+### KC-1 : Token Acheteur
+# @name tokenAcheteur
+POST {{keycloak}}/realms/{{realm}}/protocol/openid-connect/token
+Content-Type: application/x-www-form-urlencoded
+
+grant_type=password&client_id={{clientId}}&client_secret={{clientSecret}}&username=test-acheteur&password=password
+
+###
+
+### KC-2 : Token Producteur
+# @name tokenProducteur
+POST {{keycloak}}/realms/{{realm}}/protocol/openid-connect/token
+Content-Type: application/x-www-form-urlencoded
+
+grant_type=password&client_id={{clientId}}&client_secret={{clientSecret}}&username=test-producteur&password=password
+
+###
+
+### KC-3 : Token Admin
+# @name tokenAdmin
+POST {{keycloak}}/realms/{{realm}}/protocol/openid-connect/token
+Content-Type: application/x-www-form-urlencoded
+
+grant_type=password&client_id={{clientId}}&client_secret={{clientSecret}}&username=test-admin&password=password
+
+
+### ============================================================
+### UTILISATEURS
+### ============================================================
+
+### U-1 : Mon profil — sans token (attendu : 401 Unauthorized)
+GET {{baseUrl}}/api/utilisateurs/me
+Accept: application/json
+
+###
+
+### U-2 : Mon profil — avec token Acheteur (attendu : 200 OK ou 404 si pas encore en base)
+# Exécuter KC-1 d'abord
+GET {{baseUrl}}/api/utilisateurs/me
+Authorization: Bearer {{tokenAcheteur.response.body.access_token}}
+Accept: application/json
+
+###
+
+### U-3 : Mon profil — avec token Producteur (attendu : 200 OK avec EstProducteur = true)
+# Exécuter KC-2 d'abord
+GET {{baseUrl}}/api/utilisateurs/me
+Authorization: Bearer {{tokenProducteur.response.body.access_token}}
+Accept: application/json
+
+
+### ============================================================
+### PRODUCTEURS
+### ============================================================
+
+### P-1 : Lister tous les producteurs — sans token (attendu : 401 Unauthorized)
+GET {{baseUrl}}/api/producteurs
+Accept: application/json
+
+###
+
+### P-2 : Lister tous les producteurs — avec token (attendu : 200 OK)
+# Exécuter KC-1 d'abord
+GET {{baseUrl}}/api/producteurs
+Authorization: Bearer {{tokenAcheteur.response.body.access_token}}
+Accept: application/json
+
+###
+
+### P-3 : Récupérer un producteur par ID (attendu : 200 OK)
+# Exécuter KC-1 d'abord
+GET {{baseUrl}}/api/producteurs/1
+Authorization: Bearer {{tokenAcheteur.response.body.access_token}}
+Accept: application/json
+
+###
+
+### P-4 : Récupérer un producteur inexistant (attendu : 404 Not Found)
+# Exécuter KC-1 d'abord
+GET {{baseUrl}}/api/producteurs/9999
+Authorization: Bearer {{tokenAcheteur.response.body.access_token}}
+Accept: application/json
+
+###
+
+### P-5 : S'enregistrer comme producteur — avec token Acheteur (attendu : 201 Created)
+# Exécuter KC-1 d'abord
+POST {{baseUrl}}/api/producteurs
+Authorization: Bearer {{tokenAcheteur.response.body.access_token}}
+Content-Type: application/json
+
+{
+  "nomProducteur": "Ferme des Collines",
+  "adresse": "12 chemin des Collines, 38000 Grenoble",
+  "description": "Maraîchage bio et fruits de saison"
+}
+
+###
+
+### P-6 : S'enregistrer deux fois (attendu : 500 / erreur métier doublon)
+# Exécuter KC-1 puis P-5 d'abord
+POST {{baseUrl}}/api/producteurs
+Authorization: Bearer {{tokenAcheteur.response.body.access_token}}
+Content-Type: application/json
+
+{
+  "nomProducteur": "Doublon Farm",
+  "adresse": "1 rue du doublon",
+  "description": null
+}
+
+###
+
+### P-7 : S'enregistrer sans token (attendu : 401 Unauthorized)
+POST {{baseUrl}}/api/producteurs
+Content-Type: application/json
+
+{
+  "nomProducteur": "Test sans auth",
+  "adresse": "1 rue anonyme",
+  "description": null
+}
+
+
+### ============================================================
+### TESTS RBAC — Vérification des rôles
+### ============================================================
+
+### RBAC-1 : Acheteur accède à la liste des producteurs (attendu : 200 OK)
+# Exécuter KC-1 d'abord
+GET {{baseUrl}}/api/producteurs
+Authorization: Bearer {{tokenAcheteur.response.body.access_token}}
+
+###
+
+### RBAC-2 : Admin accède à la liste des producteurs (attendu : 200 OK)
+# Exécuter KC-3 d'abord
+GET {{baseUrl}}/api/producteurs
+Authorization: Bearer {{tokenAdmin.response.body.access_token}}
