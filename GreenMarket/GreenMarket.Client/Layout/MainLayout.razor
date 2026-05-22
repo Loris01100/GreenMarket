@@ -1,0 +1,71 @@
+@inherits LayoutComponentBase
+@using Microsoft.AspNetCore.Components.Authorization
+@inject NavigationManager Navigation
+
+<div class="app-layout">
+    <header class="app-header">
+        <div class="header-brand">
+            <div class="brand-icon">
+                <FluentIcon Value="@(new Icons.Filled.Size28.PlantGrass())" Color="@Color.Custom" CustomColor="#a8e6bc" />
+            </div>
+            <span class="brand-title">GreenMarket</span>
+            <span class="brand-badge">BETA</span>
+        </div>
+
+        <AuthorizeView>
+            <Authorized>
+                <div class="header-user">
+                    <div class="user-avatar">
+                        <FluentIcon Value="@(new Icons.Filled.Size20.Person())" Color="@Color.Custom" CustomColor="white" />
+                    </div>
+                    <span class="user-name">@context.User.Identity?.Name</span>
+                    <button @onclick="BeginLogout" class="header-btn logout-btn">
+                        <FluentIcon Value="@(new Icons.Regular.Size20.ArrowExit())" Color="@Color.Custom" CustomColor="white" />
+                        <span>Déconnexion</span>
+                    </button>
+                </div>
+            </Authorized>
+            <NotAuthorized>
+                <button @onclick="BeginLogin" class="header-btn login-btn">
+                    <FluentIcon Value="@(new Icons.Regular.Size16.PersonAdd())" Color="@Color.Custom" CustomColor="#2d7a4f" />
+                    <span>Se connecter</span>
+                </button>
+            </NotAuthorized>
+        </AuthorizeView>
+    </header>
+
+    <div class="app-body">
+        <nav class="sidebar">
+            <div class="sidebar-section-title">Navigation</div>
+
+            <NavLink href="/" class="nav-item" Match="NavLinkMatch.All">
+                <FluentIcon Value="@(new Icons.Filled.Size20.Home())" Color="@Color.Custom" CustomColor="white" />
+                <span>Accueil</span>
+            </NavLink>
+
+            <AuthorizeView Roles="Producteur,Admin">
+                <Authorized>
+                    <NavLink href="/producteur" class="nav-item">
+                        <FluentIcon Value="@(new Icons.Filled.Size20.BuildingShop())" Color="@Color.Custom" CustomColor="white" />
+                        <span>Mon Espace</span>
+                    </NavLink>
+                </Authorized>
+            </AuthorizeView>
+        </nav>
+
+        <main class="main-content">
+            @Body
+        </main>
+    </div>
+</div>
+
+<div id="blazor-error-ui">
+    Une erreur s'est produite.
+    <a href="." class="reload">Recharger</a>
+    <span class="dismiss">X</span>
+</div>
+
+@code {
+    private void BeginLogin() => Navigation.NavigateToLogin("authentication/login");
+    private void BeginLogout() => Navigation.NavigateToLogout("authentication/logout");
+}

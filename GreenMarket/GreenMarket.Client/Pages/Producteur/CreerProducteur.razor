@@ -1,0 +1,125 @@
+@page "/producteur/creer"
+@inject HttpClient Http
+@inject NavigationManager Navigation
+
+<PageTitle>Créer mon profil - GreenMarket</PageTitle>
+
+<div class="page-header">
+    <div class="page-header-row">
+        <div class="page-header-icon">
+            <FluentIcon Value="@(new Icons.Filled.Size24.PersonAdd())" Color="@Color.Custom" CustomColor="white" />
+        </div>
+        <div>
+            <h2 class="page-title">Créer mon profil producteur</h2>
+            <p class="page-subtitle">Renseignez vos informations pour rejoindre GreenMarket</p>
+        </div>
+    </div>
+</div>
+
+<AuthorizeView Roles="Producteur,Admin">
+    <Authorized Context="authCtx">
+        <div class="form-card">
+            @if (!string.IsNullOrEmpty(_erreur))
+            {
+                <FluentMessageBar Intent="MessageIntent.Error" Style="margin-bottom: 20px;">
+                    @_erreur
+                </FluentMessageBar>
+            }
+
+            <EditForm Model="@_form" OnValidSubmit="SoumettreProfil">
+                <DataAnnotationsValidator />
+
+                <FluentStack Orientation="Orientation.Vertical" VerticalGap="20">
+                    <div>
+                        <FluentLabel>Nom du producteur *</FluentLabel>
+                        <FluentTextField @bind-Value="_form.NomProducteur"
+                                         Placeholder="Ex: Ferme des Collines"
+                                         Style="width: 100%;" />
+                        <ValidationMessage For="@(() => _form.NomProducteur)" />
+                    </div>
+
+                    <div>
+                        <FluentLabel>Adresse *</FluentLabel>
+                        <FluentTextField @bind-Value="_form.Adresse"
+                                         Placeholder="Ex: 12 Route des Champs, 69000 Lyon"
+                                         Style="width: 100%;" />
+                        <ValidationMessage For="@(() => _form.Adresse)" />
+                    </div>
+
+                    <div>
+                        <FluentLabel>Description (optionnel)</FluentLabel>
+                        <FluentTextArea @bind-Value="_form.Description"
+                                        Placeholder="Décrivez votre exploitation, vos méthodes de culture..."
+                                        Rows="4"
+                                        Style="width: 100%;" />
+                    </div>
+
+                    <FluentStack Orientation="Orientation.Horizontal" HorizontalGap="12">
+                        <FluentButton Appearance="Appearance.Accent"
+                                      Type="ButtonType.Submit"
+                                      Loading="@_envoi">
+                            Créer mon profil
+                        </FluentButton>
+                        <FluentButton Appearance="Appearance.Neutral"
+                                      OnClick="@(() => Navigation.NavigateTo("/producteur"))">
+                            Annuler
+                        </FluentButton>
+                    </FluentStack>
+                </FluentStack>
+            </EditForm>
+        </div>
+    </Authorized>
+    <NotAuthorized>
+        <RedirectToLogin />
+    </NotAuthorized>
+</AuthorizeView>
+
+@code {
+    private readonly FormulaireProducteur _form = new();
+    private bool _envoi;
+    private string? _erreur;
+
+    private async Task SoumettreProfil()
+    {
+        _envoi = true;
+        _erreur = null;
+
+        try
+        {
+            var dto = new ProducteurCreateDto(_form.NomProducteur!, _form.Adresse!, _form.Description);
+            var response = await Http.PostAsJsonAsync("api/producteurs", dto);
+
+            if (response.IsSuccessStatusCode)
+                Navigation.NavigateTo("/producteur");
+            else if (response.StatusCode == System.Net.HttpStatusCode.Forbidden)
+                _erreur = "Accès refusé. Vérifiez que vous avez bien le rôle Producteur dans Keycloak.";
+            else
+                _erreur = $"Erreur lors de la création du profil ({(int)response.StatusCode}).";
+        }
+        catch (AccessTokenNotAvailableException ex)
+        {
+            ex.Redirect();
+        }
+        catch (HttpRequestException ex)
+        {
+            _erreur = $"Impossible de contacter l'API : {ex.Message}";
+        }
+        finally
+        {
+            _envoi = false;
+        }
+    }
+
+    private class FormulaireProducteur
+    {
+        [System.ComponentModel.DataAnnotations.Required(ErrorMessage = "Le nom du producteur est obligatoire.")]
+        [System.ComponentModel.DataAnnotations.MaxLength(200)]
+        public string? NomProducteur { get; set; }
+
+        [System.ComponentModel.DataAnnotations.Required(ErrorMessage = "L'adresse est obligatoire.")]
+        [System.ComponentModel.DataAnnotations.MaxLength(500)]
+        public string? Adresse { get; set; }
+
+        public string? Description { get; set; }
+    }
+}
