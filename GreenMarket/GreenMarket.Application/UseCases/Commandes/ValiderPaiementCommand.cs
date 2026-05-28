@@ -3,33 +3,33 @@ using MediatR;
 
 namespace GreenMarket.Application.UseCases.Commandes;
 
-public record ValiderPaiementCommand(int CommandeId, string StripePaymentIntentId) : IRequest;
+public record ValiderPaiementCommand(int CommandeId, string PaymentIntentId) : IRequest;
 
 public class ValiderPaiementCommandHandler : IRequestHandler<ValiderPaiementCommand>
 {
-    private readonly ICommandeRepository _commandeRepository;
+    private readonly ICommandeRepository _commandeRepo;
     private readonly IPaiementService _paiementService;
 
     public ValiderPaiementCommandHandler(
-        ICommandeRepository commandeRepository,
+        ICommandeRepository commandeRepo,
         IPaiementService paiementService)
     {
-        _commandeRepository = commandeRepository;
+        _commandeRepo    = commandeRepo;
         _paiementService = paiementService;
     }
 
-    public async Task Handle(ValiderPaiementCommand request, CancellationToken cancellationToken)
+    public async Task Handle(ValiderPaiementCommand request, CancellationToken ct)
     {
-        var commande = await _commandeRepository.GetByIdAsync(request.CommandeId)
+        var commande = await _commandeRepo.GetByIdAsync(request.CommandeId)
             ?? throw new KeyNotFoundException($"Commande {request.CommandeId} introuvable.");
 
-        bool ok = await _paiementService.ConfirmerPaiementAsync(
-            request.StripePaymentIntentId, commande.MontantTotal);
+        if (commande.StatutPaiement == "paye")
+            return;
 
-        if (!ok)
-            throw new InvalidOperationException("Paiement Stripe non confirmé.");
+        var confirme = await _paiementService.ConfirmerPaiementAsync(
+            request.PaymentIntentId, commande.MontantTotal);
 
-        commande.StatutPaiement = "payee";
-        await _commandeRepository.UpdateAsync(commande);
+        if (!confirme)
+            throw new InvalidOperationException("Le paiement n'est pas confirmé par Stripe.");
     }
 }

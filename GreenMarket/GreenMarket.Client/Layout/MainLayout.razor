@@ -43,6 +43,13 @@
                 <span>Accueil</span>
             </NavLink>
 
+            <NavLink href="/test-paiement" class="nav-item">
+                <FluentIcon Value="@(new Icons.Filled.Size20.Payment())"
+                            Color="@Color.Custom"
+                            CustomColor="white" />
+                <span>Test Stripe</span>
+            </NavLink>
+
             <AuthorizeView Roles="Producteur,Admin">
                 <Authorized>
                     <NavLink href="/producteur" class="nav-item">
