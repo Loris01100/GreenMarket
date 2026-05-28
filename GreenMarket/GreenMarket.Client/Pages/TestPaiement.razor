@@ -1,0 +1,137 @@
+@page "/test-paiement"
+
+@inject HttpClient Http
+@inject IJSRuntime JS
+
+<PageTitle>Test Stripe</PageTitle>
+
+<h3>Test Paiement Stripe</h3>
+
+<div style="max-width:400px">
+
+    <FluentTextField @bind-Value="CommandeIdText"
+                     Label="Commande ID" />
+
+    <br />
+
+    <FluentTextField @bind-Value="MontantText"
+                     Label="Montant (€)" />
+
+    <br />
+
+    <div id="card-element"
+         style="padding:15px;border:1px solid #ccc;border-radius:8px">
+    </div>
+
+    <br />
+
+    <FluentButton Appearance="Appearance.Accent"
+                  OnClick="PayerAsync">
+        Payer
+    </FluentButton>
+
+    <br />
+    <br />
+
+    <p>@Message</p>
+
+</div>
+
+@code {
+
+    private string CommandeIdText = "1";
+    private string MontantText = "25.50";
+
+    private string Message = "";
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            await JS.InvokeVoidAsync(
+                "stripeInterop.initialize",
+                "pk_test_51TPADcEoAX0tdWGFG6wYEYx9ndJzSUM4X5xWyMKUOsvxcdZmjKmI5lqDj1hMLG9Z8SwvUpbWvcDO7Rk3kw4vOeCl00Gg69UpY2");
+        }
+    }
+
+    private async Task PayerAsync()
+    {
+        try
+        {
+            //
+            // 1. Création PaymentIntent
+            //
+            var commandeId = int.Parse(CommandeIdText);
+
+            var response = await Http.PostAsync(
+                $"http://localhost:5210/api/paiement/intent/{commandeId}",
+                null);
+
+            var result =
+                await response.Content.ReadFromJsonAsync<ClientSecretResponse>();
+
+            if (result is null)
+            {
+                Message = "Erreur backend.";
+                return;
+            }
+
+            //
+            // 2. Confirmation Stripe
+            //
+            var stripeResult =
+                await JS.InvokeAsync<StripeResult>(
+                    "stripeInterop.confirmPayment",
+                    result.ClientSecret);
+
+            if (!stripeResult.Success)
+            {
+                Message = stripeResult.Error!;
+                return;
+            }
+
+            //
+            // 3. Validation backend
+            //
+            var validationResponse =
+                await Http.PostAsJsonAsync(
+                    $"http://localhost:5210/api/commandes/{commandeId}/valider-paiement",
+                    new ValiderPaiementRequest
+                    {
+                        PaymentIntentId = stripeResult.PaymentIntentId!
+                    });
+
+            if (validationResponse.IsSuccessStatusCode)
+            {
+                Message = "Paiement réussi ✅";
+            }
+            else
+            {
+                Message = "Paiement Stripe OK mais validation backend KO";
+            }
+        }
+        catch (Exception ex)
+        {
+            Message = ex.Message;
+        }
+    }
+
+    public class ClientSecretResponse
+    {
+        public string ClientSecret { get; set; } = "";
+    }
+
+    public class StripeResult
+    {
+        public bool Success { get; set; }
+
+        public string? Error { get; set; }
+
+        public string? PaymentIntentId { get; set; }
+    }
+
+    public class ValiderPaiementRequest
+    {
+        public string PaymentIntentId { get; set; } = "";
+    }
+}
