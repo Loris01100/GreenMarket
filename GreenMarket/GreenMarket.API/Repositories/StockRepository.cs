@@ -5,7 +5,7 @@ using Microsoft.EntityFrameworkCore;
 
 namespace GreenMarket.API.Repositories;
 
-public class StockRepository
+public class StockRepository : IStockRepository
 {
     private readonly GreenMarketDbContext _context;
 
@@ -25,7 +25,7 @@ public class StockRepository
     {
         return await _context.Stocks
             .Include(s => s.Produit)
-            .FirstOrDefaultAsync(s => s.ProduitId == id);
+            .FirstOrDefaultAsync(s => s.StockId == id);
     }
 
     public async Task AddAsync(Stock stock)

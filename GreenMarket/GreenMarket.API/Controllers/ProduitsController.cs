@@ -1,5 +1,7 @@
-﻿using GreenMarket.API.Core.Models;
-using GreenMarket.API.Repositories;
+using GreenMarket.Domain.Entities;
+using GreenMarket.Domain.Interfaces;
+using GreenMarket.Shared.DTOs.Produits;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace GreenMarket.API.Controllers;
@@ -8,60 +10,88 @@ namespace GreenMarket.API.Controllers;
 [Route("api/[controller]")]
 public class ProduitsController : ControllerBase
 {
-    private readonly ProduitRepository _repository;
+    private readonly IProduitRepository _repository;
 
-    public ProduitsController(ProduitRepository repository)
+    public ProduitsController(IProduitRepository repository)
     {
         _repository = repository;
     }
 
     [HttpGet]
-    public async Task<ActionResult<IEnumerable<Produit>>> GetAll()
+    public async Task<ActionResult<IEnumerable<ProduitDto>>> GetAll()
     {
         var produits = await _repository.GetAllAsync();
-        return Ok(produits);
+        return Ok(produits.Select(ToDto));
     }
 
     [HttpGet("{id}")]
-    public async Task<ActionResult<Produit>> GetById(int id)
+    public async Task<ActionResult<ProduitDto>> GetById(int id)
     {
         var produit = await _repository.GetByIdAsync(id);
-        if (produit == null)
-        {
+        if (produit is null)
             return NotFound();
-        }
-        return Ok(produit);
+        return Ok(ToDto(produit));
     }
 
     [HttpPost]
-    public async Task<ActionResult<Produit>> Create(Produit produit)
+    [Authorize(Roles = "Producteur,Admin")]
+    public async Task<ActionResult<ProduitDto>> Create(ProduitCreateDto dto)
     {
+        var produit = new Produit
+        {
+            Nom = dto.Nom,
+            Description = dto.Description,
+            PrixUnitaire = dto.PrixUnitaire,
+            ProducteurId = dto.ProducteurId,
+            CategorieId = dto.CategorieId,
+            EstActif = true,
+            DateCreation = DateTimeOffset.UtcNow
+        };
+
         await _repository.AddAsync(produit);
-        return CreatedAtAction(nameof(GetById), new { id = produit.Id }, produit);
+        var created = await _repository.GetByIdAsync(produit.ProduitId);
+        return CreatedAtAction(nameof(GetById), new { id = produit.ProduitId }, ToDto(created!));
     }
 
     [HttpPut("{id}")]
-    public async Task<IActionResult> Update(int id, Produit produit)
+    [Authorize(Roles = "Producteur,Admin")]
+    public async Task<IActionResult> Update(int id, ProduitCreateDto dto)
     {
-        if (id != produit.Id)
-        {
-            return BadRequest();
-        }
+        var produit = await _repository.GetByIdAsync(id);
+        if (produit is null)
+            return NotFound();
+
+        produit.Nom = dto.Nom;
+        produit.Description = dto.Description;
+        produit.PrixUnitaire = dto.PrixUnitaire;
+        produit.CategorieId = dto.CategorieId;
 
         await _repository.UpdateAsync(produit);
         return NoContent();
     }
 
     [HttpDelete("{id}")]
+    [Authorize(Roles = "Admin")]
     public async Task<IActionResult> Delete(int id)
     {
         var produit = await _repository.GetByIdAsync(id);
-        if (produit == null)
-        {
+        if (produit is null)
             return NotFound();
-        }
 
         await _repository.DeleteAsync(id);
         return NoContent();
     }
+
+    private static ProduitDto ToDto(Produit p) => new(
+        p.ProduitId,
+        p.Nom,
+        p.Description,
+        p.PrixUnitaire,
+        p.EstActif,
+        p.ProducteurId,
+        p.Producteur?.NomProducteur ?? string.Empty,
+        p.CategorieId,
+        p.Categorie?.Libelle ?? string.Empty,
+        p.Stock?.QuantiteDisponible
+    );
 }

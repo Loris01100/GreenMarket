@@ -1,9 +1,5 @@
-﻿using System.Security.Claims;
-using GreenMarket.Application.DTOs;
 using GreenMarket.Domain.Interfaces;
-using GreenMarket.Application.UseCases.Categories;
-using MediatR;
-using Microsoft.AspNetCore.Authorization;
+using GreenMarket.Shared.DTOs.Categories;
 using Microsoft.AspNetCore.Mvc;
 
 namespace GreenMarket.API.Controllers;
@@ -12,60 +8,26 @@ namespace GreenMarket.API.Controllers;
 [Route("api/[controller]")]
 public class CategoriesController : ControllerBase
 {
-    private readonly CategorieRepository _repository;
+    private readonly ICategorieRepository _repository;
 
-    public CategoriesController(CategorieRepository repository)
+    public CategoriesController(ICategorieRepository repository)
     {
         _repository = repository;
     }
 
     [HttpGet]
-    public async Task<ActionResult<IEnumerable<Categorie>>> GetAll()
+    public async Task<ActionResult<IEnumerable<CategorieDto>>> GetAll()
     {
         var categories = await _repository.GetAllAsync();
-        return Ok(categories);
+        return Ok(categories.Select(c => new CategorieDto(c.CategorieId, c.Libelle, c.Description)));
     }
 
     [HttpGet("{id}")]
-    public async Task<ActionResult<Categorie>> GetById(int id)
+    public async Task<ActionResult<CategorieDto>> GetById(int id)
     {
         var categorie = await _repository.GetByIdAsync(id);
-        if (categorie == null)
-        {
+        if (categorie is null)
             return NotFound();
-        }
-        return Ok(categorie);
-    }
-
-    [HttpPost]
-    public async Task<ActionResult<Categorie>> Create(Categorie categorie)
-    {
-        await _repository.AddAsync(categorie);
-        return CreatedAtAction(nameof(GetById), new { id = categorie.Id }, categorie);
-    }
-
-    [HttpPut("{id}")]
-    public async Task<IActionResult> Update(int id, Categorie categorie)
-    {
-        if (id != categorie.Id)
-        {
-            return BadRequest();
-        }
-
-        await _repository.UpdateAsync(categorie);
-        return NoContent();
-    }
-
-    [HttpDelete("{id}")]
-    public async Task<IActionResult> Delete(int id)
-    {
-        var categorie = await _repository.GetByIdAsync(id);
-        if (categorie == null)
-        {
-            return NotFound();
-        }
-
-        await _repository.DeleteAsync(id);
-        return NoContent();
+        return Ok(new CategorieDto(categorie.CategorieId, categorie.Libelle, categorie.Description));
     }
 }

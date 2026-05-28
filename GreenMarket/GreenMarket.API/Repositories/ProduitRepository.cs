@@ -5,7 +5,7 @@ using Microsoft.EntityFrameworkCore;
 
 namespace GreenMarket.API.Repositories;
 
-public class ProduitRepository
+public class ProduitRepository : IProduitRepository
 {
     private readonly GreenMarketDbContext _context;
 
@@ -18,6 +18,8 @@ public class ProduitRepository
     {
         return await _context.Produits
             .Include(p => p.Categorie)
+            .Include(p => p.Producteur)
+            .Include(p => p.Stock)
             .ToListAsync();
     }
 
@@ -25,7 +27,9 @@ public class ProduitRepository
     {
         return await _context.Produits
             .Include(p => p.Categorie)
-            .FirstOrDefaultAsync(p => p.CategorieId == id);
+            .Include(p => p.Producteur)
+            .Include(p => p.Stock)
+            .FirstOrDefaultAsync(p => p.ProduitId == id);
     }
 
     public async Task AddAsync(Produit produit)

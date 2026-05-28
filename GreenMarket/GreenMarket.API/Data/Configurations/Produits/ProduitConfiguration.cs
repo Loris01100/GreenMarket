@@ -21,9 +21,6 @@ public class ProduitConfiguration : IEntityTypeConfiguration<Produit>
             .IsRequired()
             .HasColumnType("decimal(18,2)");
 
-        builder.Property(p => p.Stock)
-            .IsRequired();
-
         builder.HasOne(p => p.Categorie)
             .WithMany(c => c.Produits)
             .HasForeignKey(p => p.CategorieId)

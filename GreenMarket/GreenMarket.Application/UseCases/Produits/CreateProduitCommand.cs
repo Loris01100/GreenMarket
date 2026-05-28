@@ -6,8 +6,9 @@ namespace GreenMarket.Application.UseCases.Produits;
 
 public record CreateProduitCommand(
     string Nom,
-    string Description,
+    string? Description,
     decimal Prix,
+    int ProducteurId,
     int CategorieId) : IRequest<Produit>;
 
 public class CreateProduitCommandHandler : IRequestHandler<CreateProduitCommand, Produit>
@@ -26,7 +27,10 @@ public class CreateProduitCommandHandler : IRequestHandler<CreateProduitCommand,
             Nom = request.Nom,
             Description = request.Description,
             PrixUnitaire = request.Prix,
-            CategorieId = request.CategorieId
+            ProducteurId = request.ProducteurId,
+            CategorieId = request.CategorieId,
+            EstActif = true,
+            DateCreation = DateTimeOffset.UtcNow
         };
 
         await _produitRepository.AddAsync(produit);

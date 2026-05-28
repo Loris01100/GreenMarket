@@ -2,7 +2,8 @@
 
 public record ProduitCreateDto(
     string Nom,
-    string Description,
+    string? Description,
     decimal PrixUnitaire,
-    int ProducteurId
+    int ProducteurId,
+    int CategorieId
 );

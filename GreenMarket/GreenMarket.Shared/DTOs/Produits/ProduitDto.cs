@@ -1,10 +1,14 @@
 ﻿namespace GreenMarket.Shared.DTOs.Produits;
 
 public record ProduitDto(
-    int Id,
+    int ProduitId,
     string Nom,
-    string Description,
+    string? Description,
     decimal PrixUnitaire,
+    bool EstActif,
     int ProducteurId,
-    string NomProducteur
+    string NomProducteur,
+    int CategorieId,
+    string CategorieLibelle,
+    int? StockDisponible
 );

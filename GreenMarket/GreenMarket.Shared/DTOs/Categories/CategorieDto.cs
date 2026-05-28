@@ -1,6 +1,7 @@
 ﻿namespace GreenMarket.Shared.DTOs.Categories;
 
 public record CategorieDto(
-    int Id,
-    string Name
+    int CategorieId,
+    string Libelle,
+    string? Description
 );
