@@ -1,0 +1,40 @@
+@page "/authentication/{action}"
+@using Microsoft.AspNetCore.Components.WebAssembly.Authentication
+
+<RemoteAuthenticatorView Action="@Action">
+    <LogInFailed>
+        <FluentCard Style="padding: 20px; max-width: 400px; margin: 50px auto;">
+            <FluentStack Orientation="Orientation.Vertical"
+                         HorizontalAlignment="HorizontalAlignment.Center"
+                         VerticalGap="16">
+                <FluentIcon Value="@(new Icons.Regular.Size32.DismissCircle())" Color="@Color.Error" />
+                <FluentLabel Typo="Typography.Header">Échec de connexion</FluentLabel>
+                <FluentLabel>Une erreur s'est produite lors de la connexion.</FluentLabel>
+                <FluentButton Appearance="Appearance.Accent"
+                              OnClick="@(() => Navigation.NavigateTo("/"))">
+                    Retour à l'accueil
+                </FluentButton>
+            </FluentStack>
+        </FluentCard>
+    </LogInFailed>
+    <LogOutSucceeded>
+        <FluentCard Style="padding: 20px; max-width: 400px; margin: 50px auto;">
+            <FluentStack Orientation="Orientation.Vertical"
+                         HorizontalAlignment="HorizontalAlignment.Center"
+                         VerticalGap="16">
+                <FluentIcon Value="@(new Icons.Regular.Size32.Checkmark())" Color="@Color.Success" />
+                <FluentLabel Typo="Typography.Header">Déconnecté</FluentLabel>
+                <FluentLabel>Vous avez été déconnecté avec succès.</FluentLabel>
+                <FluentButton Appearance="Appearance.Accent"
+                              OnClick="@(() => Navigation.NavigateTo("/"))">
+                    Retour à l'accueil
+                </FluentButton>
+            </FluentStack>
+        </FluentCard>
+    </LogOutSucceeded>
+</RemoteAuthenticatorView>
+
+@code {
+    [Parameter] public string? Action { get; set; }
+    [Inject] private NavigationManager Navigation { get; set; } = default!;
+}

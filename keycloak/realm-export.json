@@ -89,7 +89,7 @@
             {
                 "id": "4ad6a8d5-3dda-4e3e-9f05-4afe821b3835",
                 "name": "Acheteur",
-                "description": "Utilisateur acheteur (r\u00f4le par d\u00e9faut)",
+                "description": "Utilisateur acheteur (rôle par défaut)",
                 "composite": false,
                 "clientRole": false,
                 "containerId": "cec28ca2-f303-4f7d-a9d0-13503e0151e9",
@@ -98,7 +98,7 @@
             {
                 "id": "a5efe437-705c-4b73-8931-d8d85035ea01",
                 "name": "Producteur",
-                "description": "Producteur certifi\u00e9 sur la plateforme",
+                "description": "Producteur certifié sur la plateforme",
                 "composite": false,
                 "clientRole": false,
                 "containerId": "cec28ca2-f303-4f7d-a9d0-13503e0151e9",
@@ -908,6 +908,25 @@
                 "offline_access",
                 "microprofile-jwt"
             ]
+        },
+        {
+            "clientId": "greenmarket-client",
+            "name": "GreenMarket Client Blazor",
+            "enabled": true,
+            "publicClient": true,
+            "standardFlowEnabled": true,
+            "directAccessGrantsEnabled": false,
+            "serviceAccountsEnabled": false,
+            "protocol": "openid-connect",
+            "redirectUris": [
+                "http://localhost:5200/*"
+            ],
+            "webOrigins": [
+                "http://localhost:5200"
+            ],
+            "attributes": {
+                "pkce.code.challenge.method": "S256"
+            }
         }
     ],
     "clientScopes": [
