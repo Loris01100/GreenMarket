@@ -11,11 +11,11 @@ public static class ProducteursEndpoints
 {
     public static void MapProducteursEndpoints(this WebApplication app)
     {
-        var group = app.MapGroup("/api/producteurs").RequireAuthorization();
+        var group = app.MapGroup("/api/producteurs");
 
-        group.MapGet("/", GetAllProducteurs);
-        group.MapGet("/{id:int}", GetProducteurById);
-        group.MapPost("/", CreateProducteur).RequireAuthorization(p => p.RequireRole("Acheteur", "Admin"));
+        group.MapGet("/", GetAllProducteurs).AllowAnonymous();
+        group.MapGet("/{id:int}", GetProducteurById).AllowAnonymous();
+        group.MapPost("/", CreateProducteur).RequireAuthorization();
     }
 
     public static void MapUtilisateursEndpoints(this WebApplication app)
