@@ -1,12 +1,13 @@
-﻿using GreenMarket.Domain.Entities;
 using GreenMarket.Domain.Interfaces;
+using GreenMarket.Shared.DTOs.Produits;
 using MediatR;
 
 namespace GreenMarket.Application.UseCases.Produits;
 
-public record GetProduitByIdQuery(int Id) : IRequest<Produit?>;
+/// <summary>F2 — Affichage de la fiche détaillée d'un produit.</summary>
+public record GetProduitByIdQuery(int Id) : IRequest<ProduitDto?>;
 
-public class GetProduitByIdQueryHandler : IRequestHandler<GetProduitByIdQuery, Produit?>
+public class GetProduitByIdQueryHandler : IRequestHandler<GetProduitByIdQuery, ProduitDto?>
 {
     private readonly IProduitRepository _produitRepository;
 
@@ -15,8 +16,9 @@ public class GetProduitByIdQueryHandler : IRequestHandler<GetProduitByIdQuery, P
         _produitRepository = produitRepository;
     }
 
-    public async Task<Produit?> Handle(GetProduitByIdQuery request, CancellationToken cancellationToken)
+    public async Task<ProduitDto?> Handle(GetProduitByIdQuery request, CancellationToken cancellationToken)
     {
-        return await _produitRepository.GetByIdAsync(request.Id);
+        var produit = await _produitRepository.GetByIdAsync(request.Id);
+        return produit?.ToDto();
     }
 }

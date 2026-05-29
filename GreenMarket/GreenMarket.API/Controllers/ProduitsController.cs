@@ -1,6 +1,7 @@
-using GreenMarket.Domain.Entities;
-using GreenMarket.Domain.Interfaces;
+using System.Security.Claims;
+using GreenMarket.Application.UseCases.Produits;
 using GreenMarket.Shared.DTOs.Produits;
+using MediatR;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
@@ -10,88 +11,97 @@ namespace GreenMarket.API.Controllers;
 [Route("api/[controller]")]
 public class ProduitsController : ControllerBase
 {
-    private readonly IProduitRepository _repository;
+    private readonly IMediator _mediator;
 
-    public ProduitsController(IProduitRepository repository)
+    public ProduitsController(IMediator mediator)
     {
-        _repository = repository;
+        _mediator = mediator;
     }
 
+    /// <summary>
+    /// F2 — Consultation et recherche du catalogue (accessible sans authentification).
+    /// Seuls les produits actifs (disponibles) sont retournés.
+    /// </summary>
     [HttpGet]
-    public async Task<ActionResult<IEnumerable<ProduitDto>>> GetAll()
+    [AllowAnonymous]
+    public async Task<ActionResult<IEnumerable<ProduitDto>>> GetAll(
+        [FromQuery] string? recherche = null,
+        [FromQuery] int? categorieId = null,
+        [FromQuery] string? tri = null)
     {
-        var produits = await _repository.GetAllAsync();
-        return Ok(produits.Select(ToDto));
+        var produits = await _mediator.Send(
+            new GetProduitsQuery(recherche, categorieId, tri, ActifsSeulement: true));
+        return Ok(produits);
     }
 
-    [HttpGet("{id}")]
+    /// <summary>F2 — Fiche détaillée d'un produit.</summary>
+    [HttpGet("{id:int}")]
+    [AllowAnonymous]
     public async Task<ActionResult<ProduitDto>> GetById(int id)
     {
-        var produit = await _repository.GetByIdAsync(id);
-        if (produit is null)
-            return NotFound();
-        return Ok(ToDto(produit));
+        var produit = await _mediator.Send(new GetProduitByIdQuery(id));
+        return produit is null ? NotFound() : Ok(produit);
     }
 
+    /// <summary>F5 — Création d'un produit par le producteur authentifié.</summary>
     [HttpPost]
     [Authorize(Roles = "Producteur,Admin")]
     public async Task<ActionResult<ProduitDto>> Create(ProduitCreateDto dto)
     {
-        var produit = new Produit
+        try
         {
-            Nom = dto.Nom,
-            Description = dto.Description,
-            PrixUnitaire = dto.PrixUnitaire,
-            ProducteurId = dto.ProducteurId,
-            CategorieId = dto.CategorieId,
-            EstActif = true,
-            DateCreation = DateTimeOffset.UtcNow
-        };
-
-        await _repository.AddAsync(produit);
-        var created = await _repository.GetByIdAsync(produit.ProduitId);
-        return CreatedAtAction(nameof(GetById), new { id = produit.ProduitId }, ToDto(created!));
+            var produit = await _mediator.Send(new CreateProduitCommand(CurrentUserId(), dto));
+            return CreatedAtAction(nameof(GetById), new { id = produit.ProduitId }, produit);
+        }
+        catch (UnauthorizedAccessException ex)
+        {
+            return StatusCode(StatusCodes.Status403Forbidden, new { message = ex.Message });
+        }
     }
 
-    [HttpPut("{id}")]
+    /// <summary>F5 — Modification d'un produit (contrôle d'appartenance).</summary>
+    [HttpPut("{id:int}")]
     [Authorize(Roles = "Producteur,Admin")]
-    public async Task<IActionResult> Update(int id, ProduitCreateDto dto)
+    public async Task<ActionResult<ProduitDto>> Update(int id, ProduitCreateDto dto)
     {
-        var produit = await _repository.GetByIdAsync(id);
-        if (produit is null)
+        try
+        {
+            var produit = await _mediator.Send(
+                new UpdateProduitCommand(id, CurrentUserId(), IsAdmin(), dto));
+            return Ok(produit);
+        }
+        catch (KeyNotFoundException)
+        {
             return NotFound();
-
-        produit.Nom = dto.Nom;
-        produit.Description = dto.Description;
-        produit.PrixUnitaire = dto.PrixUnitaire;
-        produit.CategorieId = dto.CategorieId;
-
-        await _repository.UpdateAsync(produit);
-        return NoContent();
+        }
+        catch (UnauthorizedAccessException ex)
+        {
+            return StatusCode(StatusCodes.Status403Forbidden, new { message = ex.Message });
+        }
     }
 
-    [HttpDelete("{id}")]
-    [Authorize(Roles = "Admin")]
+    /// <summary>F5 — Suppression d'un produit (contrôle d'appartenance).</summary>
+    [HttpDelete("{id:int}")]
+    [Authorize(Roles = "Producteur,Admin")]
     public async Task<IActionResult> Delete(int id)
     {
-        var produit = await _repository.GetByIdAsync(id);
-        if (produit is null)
+        try
+        {
+            await _mediator.Send(new DeleteProduitCommand(id, CurrentUserId(), IsAdmin()));
+            return NoContent();
+        }
+        catch (KeyNotFoundException)
+        {
             return NotFound();
-
-        await _repository.DeleteAsync(id);
-        return NoContent();
+        }
+        catch (UnauthorizedAccessException ex)
+        {
+            return StatusCode(StatusCodes.Status403Forbidden, new { message = ex.Message });
+        }
     }
 
-    private static ProduitDto ToDto(Produit p) => new(
-        p.ProduitId,
-        p.Nom,
-        p.Description,
-        p.PrixUnitaire,
-        p.EstActif,
-        p.ProducteurId,
-        p.Producteur?.NomProducteur ?? string.Empty,
-        p.CategorieId,
-        p.Categorie?.Libelle ?? string.Empty,
-        p.Stock?.QuantiteDisponible
-    );
+    private Guid CurrentUserId() =>
+        Guid.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier)!);
+
+    private bool IsAdmin() => User.IsInRole("Admin");
 }

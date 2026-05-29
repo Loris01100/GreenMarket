@@ -23,6 +23,45 @@ public class ProduitRepository : IProduitRepository
             .ToListAsync();
     }
 
+    public async Task<IEnumerable<Produit>> SearchAsync(
+        string? recherche = null,
+        int? categorieId = null,
+        string? tri = null,
+        bool actifsSeulement = false)
+    {
+        var query = _context.Produits
+            .Include(p => p.Categorie)
+            .Include(p => p.Producteur)
+            .Include(p => p.Stock)
+            .AsNoTracking()
+            .AsQueryable();
+
+        if (actifsSeulement)
+            query = query.Where(p => p.EstActif);
+
+        if (!string.IsNullOrWhiteSpace(recherche))
+        {
+            var terme = recherche.Trim().ToLower();
+            query = query.Where(p =>
+                p.Nom.ToLower().Contains(terme) ||
+                (p.Description != null && p.Description.ToLower().Contains(terme)));
+        }
+
+        if (categorieId is not null)
+            query = query.Where(p => p.CategorieId == categorieId);
+
+        query = tri?.ToLowerInvariant() switch
+        {
+            "prix_asc" => query.OrderBy(p => p.PrixUnitaire),
+            "prix_desc" => query.OrderByDescending(p => p.PrixUnitaire),
+            "nom_desc" => query.OrderByDescending(p => p.Nom),
+            "nom_asc" => query.OrderBy(p => p.Nom),
+            _ => query.OrderByDescending(p => p.DateCreation)
+        };
+
+        return await query.ToListAsync();
+    }
+
     public async Task<Produit?> GetByIdAsync(int id)
     {
         return await _context.Produits

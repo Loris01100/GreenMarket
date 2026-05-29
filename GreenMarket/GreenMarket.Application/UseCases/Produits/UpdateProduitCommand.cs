@@ -1,40 +1,51 @@
-﻿using GreenMarket.Domain.Entities;
 using GreenMarket.Domain.Interfaces;
+using GreenMarket.Shared.DTOs.Produits;
 using MediatR;
 
 namespace GreenMarket.Application.UseCases.Produits;
 
+/// <summary>
+/// F5 — Modification d'un produit existant. Le producteur ne peut modifier que
+/// les produits qu'il a référencés (F5.4) ; l'administrateur n'est pas restreint.
+/// </summary>
 public record UpdateProduitCommand(
     int Id,
-    string Nom,
-    string Description,
-    decimal Prix,
-    int CategorieId) : IRequest<Produit>;
+    Guid UtilisateurId,
+    bool EstAdmin,
+    ProduitCreateDto Dto) : IRequest<ProduitDto>;
 
-public class UpdateProduitCommandHandler : IRequestHandler<UpdateProduitCommand, Produit>
+public class UpdateProduitCommandHandler : IRequestHandler<UpdateProduitCommand, ProduitDto>
 {
     private readonly IProduitRepository _produitRepository;
+    private readonly IProducteurRepository _producteurRepository;
 
-    public UpdateProduitCommandHandler(IProduitRepository produitRepository)
+    public UpdateProduitCommandHandler(
+        IProduitRepository produitRepository,
+        IProducteurRepository producteurRepository)
     {
         _produitRepository = produitRepository;
+        _producteurRepository = producteurRepository;
     }
 
-    public async Task<Produit> Handle(UpdateProduitCommand request, CancellationToken cancellationToken)
+    public async Task<ProduitDto> Handle(UpdateProduitCommand request, CancellationToken cancellationToken)
     {
-        var produit = await _produitRepository.GetByIdAsync(request.Id);
+        var produit = await _produitRepository.GetByIdAsync(request.Id)
+            ?? throw new KeyNotFoundException($"Produit {request.Id} introuvable.");
 
-        if (produit == null)
-        {
-            throw new KeyNotFoundException($"Produit with ID {request.Id} not found.");
-        }
+        await ProduitOwnership.EnsureCanManage(
+            produit.ProducteurId, request.UtilisateurId, request.EstAdmin, _producteurRepository);
 
-        produit.Nom = request.Nom;
-        produit.Description = request.Description;
-        produit.PrixUnitaire = request.Prix;
-        produit.CategorieId = request.CategorieId;
+        var dto = request.Dto;
+        produit.Nom = dto.Nom.Trim();
+        produit.Description = dto.Description;
+        produit.PrixUnitaire = dto.PrixUnitaire;
+        produit.CategorieId = dto.CategorieId;
+        produit.ScoreEnvironnemental = dto.ScoreEnvironnemental;
+        produit.Tracabilite = dto.Tracabilite;
 
         await _produitRepository.UpdateAsync(produit);
-        return produit;
+
+        var maj = await _produitRepository.GetByIdAsync(produit.ProduitId);
+        return maj!.ToDto();
     }
 }

@@ -1,5 +1,7 @@
-using GreenMarket.Domain.Interfaces;
+using System.Security.Claims;
+using GreenMarket.Application.UseCases.Stocks;
 using GreenMarket.Shared.DTOs.Stocks;
+using MediatR;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
@@ -9,33 +11,49 @@ namespace GreenMarket.API.Controllers;
 [Route("api/[controller]")]
 public class StocksController : ControllerBase
 {
-    private readonly IStockRepository _repository;
+    private readonly IMediator _mediator;
 
-    public StocksController(IStockRepository repository)
+    public StocksController(IMediator mediator)
     {
-        _repository = repository;
+        _mediator = mediator;
     }
 
-    [HttpGet("produit/{produitId}")]
+    /// <summary>F6 — Disponibilité d'un produit (consultable pour l'affichage catalogue).</summary>
+    [HttpGet("produit/{produitId:int}")]
+    [AllowAnonymous]
     public async Task<ActionResult<StockDto>> GetByProduit(int produitId)
     {
-        var stocks = await _repository.GetAllAsync();
-        var stock = stocks.FirstOrDefault(s => s.ProduitId == produitId);
-        if (stock is null)
-            return NotFound();
-        return Ok(new StockDto(stock.StockId, stock.ProduitId, stock.QuantiteDisponible, stock.SeuilAlerte));
+        var stock = await _mediator.Send(new GetStockByProduitQuery(produitId));
+        return stock is null ? NotFound() : Ok(stock);
     }
 
-    [HttpPut("{id}")]
+    /// <summary>F6 — Mise à jour du stock par le producteur (contrôle d'appartenance et de validité).</summary>
+    [HttpPut("{id:int}")]
     [Authorize(Roles = "Producteur,Admin")]
-    public async Task<IActionResult> UpdateQuantite(int id, [FromBody] int nouvelleQuantite)
+    public async Task<ActionResult<StockDto>> UpdateQuantite(int id, StockUpdateDto dto)
     {
-        var stock = await _repository.GetByIdAsync(id);
-        if (stock is null)
+        try
+        {
+            var stock = await _mediator.Send(new UpdateStockCommand(
+                id, CurrentUserId(), IsAdmin(), dto.QuantiteDisponible, dto.SeuilAlerte));
+            return Ok(stock);
+        }
+        catch (ArgumentException ex)
+        {
+            return BadRequest(new { message = ex.Message });
+        }
+        catch (KeyNotFoundException)
+        {
             return NotFound();
-
-        stock.QuantiteDisponible = nouvelleQuantite;
-        await _repository.UpdateAsync(stock);
-        return NoContent();
+        }
+        catch (UnauthorizedAccessException ex)
+        {
+            return StatusCode(StatusCodes.Status403Forbidden, new { message = ex.Message });
+        }
     }
+
+    private Guid CurrentUserId() =>
+        Guid.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier)!);
+
+    private bool IsAdmin() => User.IsInRole("Admin");
 }

@@ -1,12 +1,14 @@
-﻿using GreenMarket.Domain.Entities;
+using GreenMarket.Application.UseCases.Produits;
 using GreenMarket.Domain.Interfaces;
+using GreenMarket.Shared.DTOs.Stocks;
 using MediatR;
 
 namespace GreenMarket.Application.UseCases.Stocks;
 
-public record GetStockByProduitQuery(int ProduitId) : IRequest<Stock?>;
+/// <summary>F6 — Consultation du stock d'un produit (disponibilité au catalogue).</summary>
+public record GetStockByProduitQuery(int ProduitId) : IRequest<StockDto?>;
 
-public class GetStockByProduitQueryHandler : IRequestHandler<GetStockByProduitQuery, Stock?>
+public class GetStockByProduitQueryHandler : IRequestHandler<GetStockByProduitQuery, StockDto?>
 {
     private readonly IStockRepository _stockRepository;
 
@@ -15,9 +17,10 @@ public class GetStockByProduitQueryHandler : IRequestHandler<GetStockByProduitQu
         _stockRepository = stockRepository;
     }
 
-    public async Task<Stock?> Handle(GetStockByProduitQuery request, CancellationToken cancellationToken)
+    public async Task<StockDto?> Handle(GetStockByProduitQuery request, CancellationToken cancellationToken)
     {
         var stocks = await _stockRepository.GetAllAsync();
-        return stocks.FirstOrDefault(s => s.ProduitId == request.ProduitId);
+        var stock = stocks.FirstOrDefault(s => s.ProduitId == request.ProduitId);
+        return stock?.ToDto();
     }
 }

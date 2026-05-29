@@ -8,7 +8,6 @@ using GreenMarket.API.Services;
 using GreenMarket.Domain.Interfaces;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using GreenMarket.API.Repositories;
-using GreenMarket.API.Services;
 using GreenMarket.API.Options;
 using Microsoft.EntityFrameworkCore;
 
