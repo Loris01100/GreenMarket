@@ -22,4 +22,8 @@
       <ProjectReference Include="..\GreenMarket.Domain\GreenMarket.Domain.csproj" />
     </ItemGroup>
 
+    <ItemGroup>
+      <Folder Include="Data\Configurations\Stocks\" />
+    </ItemGroup>
+
 </Project>

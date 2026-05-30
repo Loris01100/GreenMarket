@@ -8,7 +8,6 @@ using GreenMarket.API.Services;
 using GreenMarket.Domain.Interfaces;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using GreenMarket.API.Repositories;
-using GreenMarket.API.Services;
 using GreenMarket.API.Options;
 using Microsoft.EntityFrameworkCore;
 
@@ -74,15 +73,13 @@ builder.Services.AddMediatR(cfg =>
 // --- Repositories ---
 builder.Services.AddScoped<IUtilisateurRepository, UtilisateurRepository>();
 builder.Services.AddScoped<IProducteurRepository, ProducteurRepository>();
+builder.Services.AddScoped<IProduitRepository, ProduitRepository>();
+builder.Services.AddScoped<ICategorieRepository, CategorieRepository>();
+builder.Services.AddScoped<IStockRepository, StockRepository>();
 builder.Services.AddScoped<ICommandeRepository, CommandeRepository>();
 
 // --- Services ---
 builder.Services.AddHttpClient<IKeycloakService, KeycloakService>();
-builder.Services.AddMediatR(cfg =>
-    cfg.RegisterServicesFromAssembly(
-        typeof(GreenMarket.Application.UseCases.Commandes.CreerCommandeCommand).Assembly));
-
-builder.Services.AddScoped<ICommandeRepository, CommandeRepository>();
 
 builder.Services.Configure<StripeOptions>(
     builder.Configuration.GetSection("Stripe"));

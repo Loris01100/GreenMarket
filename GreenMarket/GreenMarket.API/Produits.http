@@ -1,0 +1,273 @@
+### ============================================================
+### GreenMarket — Tests HTTP : Produits, Catalogue & Stocks
+### Périmètre Dev 2 : F2 (consultation/recherche), F5 (catalogue
+### producteur), F6 (gestion des stocks).
+### Lancer l'API : dotnet run --project GreenMarket.API
+### ============================================================
+
+@baseUrl      = http://localhost:5120
+@keycloak     = http://localhost:8080
+@realm        = greenmarket
+@clientId     = greenmarket-api
+@clientSecret = SiybvyBpLBZYooICXB5xWnvpyNd8kpZL
+
+
+### ============================================================
+### KEYCLOAK — Obtention des tokens JWT
+### ============================================================
+
+### KC-1 : Token Producteur
+# @name tokenProducteur
+POST {{keycloak}}/realms/{{realm}}/protocol/openid-connect/token
+Content-Type: application/x-www-form-urlencoded
+
+grant_type=password&client_id={{clientId}}&client_secret={{clientSecret}}&username=test-producteur&password=password
+
+###
+
+### KC-2 : Token Acheteur (= un autre utilisateur, pour les tests d'accès)
+# @name tokenAcheteur
+POST {{keycloak}}/realms/{{realm}}/protocol/openid-connect/token
+Content-Type: application/x-www-form-urlencoded
+
+grant_type=password&client_id={{clientId}}&client_secret={{clientSecret}}&username=test-acheteur&password=password
+
+###
+
+### KC-3 : Token Admin
+# @name tokenAdmin
+POST {{keycloak}}/realms/{{realm}}/protocol/openid-connect/token
+Content-Type: application/x-www-form-urlencoded
+
+grant_type=password&client_id={{clientId}}&client_secret={{clientSecret}}&username=test-admin&password=password
+
+
+### ============================================================
+### PRÉREQUIS — Profils producteurs
+### Le producteur doit exister pour pouvoir publier des produits (F5.4).
+###
+### NOTE : l'enregistrement via POST /api/producteurs (ci-dessous) dépend
+### du KeycloakService (Dev 1), qui assigne le rôle via l'API admin Keycloak.
+### Si le compte de service `greenmarket-api` n'a pas le rôle realm-management
+### `manage-users` / `manage-realm`, ces appels renvoient 500. Dans ce cas, on
+### peut amorcer les profils producteurs directement en base (table
+### greenmarket.producteur), le sub Keycloak servant d'utilisateur_id.
+### ============================================================
+
+### PRE-1 : Enregistrer test-producteur comme producteur (201 Created)
+# Exécuter KC-1 d'abord
+POST {{baseUrl}}/api/producteurs
+Authorization: Bearer {{tokenProducteur.response.body.access_token}}
+Content-Type: application/json
+
+{
+  "nomProducteur": "Ferme des Collines",
+  "adresse": "12 chemin des Collines, 38000 Grenoble",
+  "description": "Maraîchage bio et fruits de saison"
+}
+
+###
+
+### PRE-2 : Enregistrer test-acheteur comme producteur (201) — sert au test d'appartenance F5
+# Exécuter KC-2 d'abord
+POST {{baseUrl}}/api/producteurs
+Authorization: Bearer {{tokenAcheteur.response.body.access_token}}
+Content-Type: application/json
+
+{
+  "nomProducteur": "Le Verger Voisin",
+  "adresse": "5 route des Pommiers, 38000 Grenoble",
+  "description": "Producteur concurrent"
+}
+
+
+### ============================================================
+### F5 — Gestion du catalogue producteur
+### ============================================================
+
+### F5-1 (Nominal) : Création d'un produit par le producteur (201 Created)
+# Exécuter KC-1. Le produit apparaît instantanément au catalogue.
+# @name produitCree
+POST {{baseUrl}}/api/produits
+Authorization: Bearer {{tokenProducteur.response.body.access_token}}
+Content-Type: application/json
+
+{
+  "nom": "Tomates anciennes",
+  "description": "Variété ancienne cultivée en plein champ",
+  "prixUnitaire": 3.50,
+  "categorieId": 1,
+  "scoreEnvironnemental": 90,
+  "tracabilite": "Récolte du jour - parcelle A",
+  "quantiteInitiale": 50,
+  "seuilAlerte": 10
+}
+
+###
+
+### F5-2 (Erreur) : Création sans token (401 Unauthorized)
+POST {{baseUrl}}/api/produits
+Content-Type: application/json
+
+{
+  "nom": "Produit anonyme",
+  "prixUnitaire": 1.0,
+  "categorieId": 1
+}
+
+###
+
+### F5-3 (Erreur) : Champs obligatoires manquants — nom vide + prix négatif (400 Bad Request)
+# Exécuter KC-1. L'enregistrement n'est pas effectué (F5.6).
+POST {{baseUrl}}/api/produits
+Authorization: Bearer {{tokenProducteur.response.body.access_token}}
+Content-Type: application/json
+
+{
+  "nom": "",
+  "prixUnitaire": -5,
+  "categorieId": 0
+}
+
+###
+
+### F5-4 (Nominal) : Modification de SON produit (200 OK)
+# Exécuter KC-1 puis F5-1
+PUT {{baseUrl}}/api/produits/{{produitCree.response.body.produitId}}
+Authorization: Bearer {{tokenProducteur.response.body.access_token}}
+Content-Type: application/json
+
+{
+  "nom": "Tomates anciennes (lot 2)",
+  "description": "Mise à jour de la fiche",
+  "prixUnitaire": 3.90,
+  "categorieId": 1,
+  "scoreEnvironnemental": 92,
+  "tracabilite": "Récolte du jour - parcelle B"
+}
+
+###
+
+### F5-5 (Erreur) : Modification par un AUTRE producteur (403 Forbidden)
+# Exécuter KC-2 puis PRE-2 + F5-1. Accès refusé (protection des données).
+PUT {{baseUrl}}/api/produits/{{produitCree.response.body.produitId}}
+Authorization: Bearer {{tokenAcheteur.response.body.access_token}}
+Content-Type: application/json
+
+{
+  "nom": "Tentative de détournement",
+  "prixUnitaire": 0.01,
+  "categorieId": 1
+}
+
+###
+
+### F5-6 (Nominal Admin) : L'admin peut modifier n'importe quel produit (200 OK)
+# Exécuter KC-3 puis F5-1
+PUT {{baseUrl}}/api/produits/{{produitCree.response.body.produitId}}
+Authorization: Bearer {{tokenAdmin.response.body.access_token}}
+Content-Type: application/json
+
+{
+  "nom": "Tomates anciennes (validé admin)",
+  "prixUnitaire": 3.90,
+  "categorieId": 1
+}
+
+
+### ============================================================
+### F2 — Consultation et recherche de produits (sans auth)
+### ============================================================
+
+### F2-1 (Nominal) : Catalogue complet (200 OK) — accessible sans token
+GET {{baseUrl}}/api/produits
+Accept: application/json
+
+###
+
+### F2-2 (Nominal) : Recherche par nom + filtre catégorie + tri prix croissant (200 OK)
+GET {{baseUrl}}/api/produits?recherche=tomate&categorieId=1&tri=prix_asc
+Accept: application/json
+
+###
+
+### F2-3 (Erreur) : Recherche d'un produit inexistant (200 OK, liste vide = "aucun résultat")
+GET {{baseUrl}}/api/produits?recherche=zzz-introuvable
+Accept: application/json
+
+###
+
+### F2-4 (Nominal) : Fiche produit détaillée (200 OK)
+# Exécuter F5-1
+GET {{baseUrl}}/api/produits/{{produitCree.response.body.produitId}}
+Accept: application/json
+
+###
+
+### F2-5 (Erreur) : Fiche d'un produit inexistant (404 Not Found)
+GET {{baseUrl}}/api/produits/999999
+Accept: application/json
+
+###
+
+### F2-6 : Liste des catégories (200 OK)
+GET {{baseUrl}}/api/categories
+Accept: application/json
+
+
+### ============================================================
+### F6 — Gestion des stocks
+### ============================================================
+
+### F6-1 : Consultation du stock d'un produit (200 OK, sans auth)
+# Exécuter F5-1
+# @name stockProduit
+GET {{baseUrl}}/api/stocks/produit/{{produitCree.response.body.produitId}}
+Accept: application/json
+
+###
+
+### F6-2 (Nominal) : Mise à jour du stock par le producteur (200 OK)
+# Exécuter KC-1 puis F6-1
+PUT {{baseUrl}}/api/stocks/{{stockProduit.response.body.stockId}}
+Authorization: Bearer {{tokenProducteur.response.body.access_token}}
+Content-Type: application/json
+
+{
+  "quantiteDisponible": 25,
+  "seuilAlerte": 5
+}
+
+###
+
+### F6-3 (Erreur) : Quantité invalide (négative) → 400, MAJ non prise en compte (F6.6)
+# Exécuter KC-1 puis F6-1
+PUT {{baseUrl}}/api/stocks/{{stockProduit.response.body.stockId}}
+Authorization: Bearer {{tokenProducteur.response.body.access_token}}
+Content-Type: application/json
+
+{
+  "quantiteDisponible": -10
+}
+
+###
+
+### F6-4 (Erreur) : MAJ du stock par un autre producteur (403 Forbidden)
+# Exécuter KC-2 puis PRE-2 + F6-1
+PUT {{baseUrl}}/api/stocks/{{stockProduit.response.body.stockId}}
+Authorization: Bearer {{tokenAcheteur.response.body.access_token}}
+Content-Type: application/json
+
+{
+  "quantiteDisponible": 0
+}
+
+###
+
+### F6-5 (Erreur) : MAJ du stock sans token (401 Unauthorized)
+PUT {{baseUrl}}/api/stocks/1
+Content-Type: application/json
+
+{
+  "quantiteDisponible": 0
+}

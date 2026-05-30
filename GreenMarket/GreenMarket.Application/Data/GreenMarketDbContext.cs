@@ -53,6 +53,13 @@ public class GreenMarketDbContext(DbContextOptions<GreenMarketDbContext> options
             entity.Property(c => c.Description).HasColumnName("description");
 
             entity.HasIndex(c => c.Libelle).IsUnique();
+
+            entity.HasData(
+                new Categorie { CategorieId = 1, Libelle = "Légumes", Description = "Légumes frais de saison" },
+                new Categorie { CategorieId = 2, Libelle = "Fruits", Description = "Fruits locaux et de saison" },
+                new Categorie { CategorieId = 3, Libelle = "Produits laitiers", Description = "Lait, fromage, yaourt, beurre" },
+                new Categorie { CategorieId = 4, Libelle = "Produits fermiers", Description = "Oeufs, miel, confitures artisanales" }
+            );
         });
 
         modelBuilder.Entity<Produit>(entity =>

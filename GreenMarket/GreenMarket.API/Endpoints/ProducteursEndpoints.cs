@@ -11,7 +11,7 @@ public static class ProducteursEndpoints
 {
     public static void MapProducteursEndpoints(this WebApplication app)
     {
-        var group = app.MapGroup("/api/producteurs").RequireAuthorization();
+        var group = app.MapGroup("/api/producteurs");
 
         group.MapGet("/", GetAllProducteurs);
         group.MapGet("/{id:int}", GetProducteurById);
