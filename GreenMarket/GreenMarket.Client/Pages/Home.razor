@@ -1,0 +1,73 @@
+@page "/"
+@inject HttpClient Http
+
+<PageTitle>Accueil - GreenMarket</PageTitle>
+
+<div class="page-header">
+    <h1 class="home-title">GreenMarket</h1>
+    <p class="home-subtitle">
+        La plateforme des produits locaux &amp; écoresponsables. Connectez producteurs et consommateurs en circuit court.
+    </p>
+</div>
+
+<AuthorizeView>
+    <Authorized>
+        <FluentStack Orientation="Orientation.Horizontal" Wrap="true" HorizontalGap="24">
+
+            <AuthorizeView Roles="Producteur,Admin">
+                <Authorized Context="prodCtx">
+                    <div class="stat-card stat-card-green" @onclick="@(() => Navigation.NavigateTo("/producteur"))" style="cursor:pointer;">
+                        <div class="stat-card-icon">
+                            <FluentIcon Value="@(new Icons.Filled.Size32.ShoppingBag())" Color="@Color.Custom" CustomColor="white" />
+                        </div>
+                        <div class="stat-card-value">Mon Espace</div>
+                        <div class="stat-card-label">Gérer mon catalogue et mes commandes</div>
+                    </div>
+                </Authorized>
+            </AuthorizeView>
+
+            <div class="stat-card stat-card-teal">
+                <div class="stat-card-icon">
+                    <FluentIcon Value="@(new Icons.Filled.Size32.People())" Color="@Color.Custom" CustomColor="white" />
+                </div>
+                <div class="stat-card-value">@_nbProducteurs</div>
+                <div class="stat-card-label">Producteurs inscrits</div>
+            </div>
+
+        </FluentStack>
+    </Authorized>
+    <NotAuthorized>
+        <FluentCard Style="padding: 40px; max-width: 500px; border-radius: 20px;">
+            <FluentStack Orientation="Orientation.Vertical" VerticalGap="20">
+                <FluentLabel Typo="Typography.Header">Bienvenue sur GreenMarket</FluentLabel>
+                <FluentLabel>
+                    Connectez-vous pour accéder à votre espace et profiter de toutes les fonctionnalités de la plateforme.
+                </FluentLabel>
+                <FluentButton Appearance="Appearance.Accent"
+                              OnClick="@(() => Navigation.NavigateToLogin("authentication/login"))">
+                    <FluentIcon Value="@(new Icons.Regular.Size16.PersonAdd())" Style="margin-right: 8px;" />
+                    Se connecter
+                </FluentButton>
+            </FluentStack>
+        </FluentCard>
+    </NotAuthorized>
+</AuthorizeView>
+
+@code {
+    private int _nbProducteurs;
+
+    [Inject] private NavigationManager Navigation { get; set; } = default!;
+
+    protected override async Task OnInitializedAsync()
+    {
+        try
+        {
+            var producteurs = await Http.GetFromJsonAsync<List<ProducteurDto>>("api/producteurs");
+            _nbProducteurs = producteurs?.Count ?? 0;
+        }
+        catch
+        {
+            _nbProducteurs = 0;
+        }
+    }
+}

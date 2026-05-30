@@ -13,9 +13,9 @@ public static class ProducteursEndpoints
     {
         var group = app.MapGroup("/api/producteurs");
 
-        group.MapGet("/", GetAllProducteurs).AllowAnonymous();
-        group.MapGet("/{id:int}", GetProducteurById).AllowAnonymous();
-        group.MapPost("/", CreateProducteur).RequireAuthorization();
+        group.MapGet("/", GetAllProducteurs);
+        group.MapGet("/{id:int}", GetProducteurById);
+        group.MapPost("/", CreateProducteur).RequireAuthorization(p => p.RequireRole("Producteur", "Admin"));
     }
 
     public static void MapUtilisateursEndpoints(this WebApplication app)
