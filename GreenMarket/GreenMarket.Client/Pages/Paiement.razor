@@ -1,0 +1,46 @@
+@page "/paiement"
+@inject CartService Cart
+
+<PageTitle>Validation de la commande - GreenMarket</PageTitle>
+
+<a class="back-link" href="/panier">
+    <FluentIcon Value="@(new Icons.Regular.Size16.ArrowLeft())" Color="@Color.Custom" CustomColor="#2e7d32" />
+    Retour au panier
+</a>
+
+<h1 class="page-title">Validation de la commande</h1>
+
+<AuthorizeView>
+    <Authorized>
+        <div class="detail-grid">
+            <div class="panel">
+                <h3 style="margin-top:0; color:var(--gm-green-strong);">Récapitulatif de la commande</h3>
+                @foreach (var item in Cart.Items)
+                {
+                    <div class="summary-row">
+                        <span>@item.Quantite&times; @item.Nom</span>
+                        <span>@item.SousTotal.ToString("0.00")€</span>
+                    </div>
+                }
+                <div class="summary-total">
+                    <span>Total à payer</span>
+                    <span>@Cart.SousTotal.ToString("0.00")€</span>
+                </div>
+            </div>
+
+            <div class="panel">
+                <h3 style="margin-top:0; color:var(--gm-green-strong);">
+                    <FluentIcon Value="@(new Icons.Regular.Size20.LockClosed())" Color="@Color.Custom" CustomColor="#3a9d5d" />
+                    Paiement sécurisé
+                </h3>
+                <FluentMessageBar Intent="MessageIntent.Info" Style="margin-top:12px;">
+                    Le module de paiement sécurisé (Stripe) sera intégré prochainement.
+                    Le récapitulatif ci-contre reflète votre panier.
+                </FluentMessageBar>
+            </div>
+        </div>
+    </Authorized>
+    <NotAuthorized>
+        <RedirectToLogin />
+    </NotAuthorized>
+</AuthorizeView>

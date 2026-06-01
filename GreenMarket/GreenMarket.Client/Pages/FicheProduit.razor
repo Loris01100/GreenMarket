@@ -1,0 +1,139 @@
+@page "/produit/{Id:int}"
+@inject HttpClient Http
+@inject NavigationManager Navigation
+@inject CartService Cart
+
+<PageTitle>@(_produit?.Nom ?? "Produit") - GreenMarket</PageTitle>
+
+<a class="back-link" href="/catalogue">
+    <FluentIcon Value="@(new Icons.Regular.Size16.ArrowLeft())" Color="@Color.Custom" CustomColor="#2e7d32" />
+    Retour au catalogue
+</a>
+
+@if (_loading)
+{
+    <div class="loading-container">
+        <FluentProgressRing />
+        <span class="loading-text">Chargement du produit...</span>
+    </div>
+}
+else if (_produit is null)
+{
+    <FluentMessageBar Intent="MessageIntent.Error">Ce produit est introuvable.</FluentMessageBar>
+}
+else
+{
+    <div class="detail-grid">
+        <div class="detail-image">
+            <FluentIcon Value="@(new Icons.Regular.Size32.LeafOne())" Color="@Color.Custom" CustomColor="#8cc79f" />
+        </div>
+
+        <div>
+            <span class="cat-chip">@_produit.CategorieLibelle</span>
+            <h1 class="detail-title">@_produit.Nom</h1>
+            <div class="detail-producer">
+                <FluentIcon Value="@(new Icons.Filled.Size16.Location())" Color="@Color.Custom" CustomColor="#e0922f" />
+                @_produit.NomProducteur
+            </div>
+
+            @if (!string.IsNullOrWhiteSpace(_produit.Description))
+            {
+                <p class="detail-desc">@_produit.Description</p>
+            }
+
+            @if (!string.IsNullOrWhiteSpace(_produit.Tracabilite))
+            {
+                <div class="info-box">
+                    <h4>Traçabilité</h4>
+                    <p>@_produit.Tracabilite</p>
+                </div>
+            }
+
+            @if (_produit.ScoreEnvironnemental is int score)
+            {
+                <div class="info-box">
+                    <h4>
+                        <FluentIcon Value="@(new Icons.Regular.Size16.LeafOne())" Color="@Color.Custom" CustomColor="#3a9d5d" />
+                        Score environnemental
+                    </h4>
+                    <div class="score-row">
+                        <div class="score-bar"><span style="width:@(score)%"></span></div>
+                        <span class="score-value">@score%</span>
+                    </div>
+                </div>
+            }
+
+            <p style="color:var(--gm-muted); margin:14px 0 4px; font-size:0.9rem;">
+                @if (_produit.StockDisponible is > 0)
+                {
+                    <span>En stock (@_produit.StockDisponible disponibles)</span>
+                }
+                else
+                {
+                    <span style="color:var(--gm-red); font-weight:600;">Actuellement en rupture</span>
+                }
+            </p>
+
+            <div style="display:flex; align-items:center; justify-content:space-between; gap:16px; margin:8px 0 18px;">
+                <div>
+                    <div style="color:var(--gm-muted); font-size:0.85rem;">Prix</div>
+                    <div class="detail-price">@_produit.PrixUnitaire.ToString("0.00")€</div>
+                </div>
+                <div class="qty-control">
+                    <button @onclick="Decrementer" disabled="@(_quantite <= 1)">−</button>
+                    <span class="qty-val">@_quantite</span>
+                    <button @onclick="Incrementer" disabled="@(_produit.StockDisponible is int s && _quantite >= s)">+</button>
+                </div>
+            </div>
+
+            <button class="btn-primary btn-block"
+                    disabled="@(_produit.StockDisponible is not > 0)"
+                    @onclick="AjouterAuPanier">
+                <FluentIcon Value="@(new Icons.Regular.Size20.Cart())" Color="@Color.Custom" CustomColor="white" />
+                Ajouter au panier - @((_produit.PrixUnitaire * _quantite).ToString("0.00"))€
+            </button>
+
+            @if (_ajoute)
+            {
+                <p style="color:var(--gm-green-mid); font-weight:600; margin-top:12px; text-align:center;">
+                    ✓ Produit ajouté au panier
+                </p>
+            }
+        </div>
+    </div>
+}
+
+@code {
+    [Parameter] public int Id { get; set; }
+
+    private ProduitDto? _produit;
+    private bool _loading = true;
+    private int _quantite = 1;
+    private bool _ajoute;
+
+    protected override async Task OnInitializedAsync()
+    {
+        try
+        {
+            _produit = await Http.GetFromJsonAsync<ProduitDto>($"api/produits/{Id}");
+        }
+        catch
+        {
+            _produit = null;
+        }
+        finally
+        {
+            _loading = false;
+        }
+    }
+
+    private void Incrementer() => _quantite++;
+    private void Decrementer() { if (_quantite > 1) _quantite--; }
+
+    private void AjouterAuPanier()
+    {
+        if (_produit is null) return;
+        Cart.Ajouter(_produit, _quantite);
+        _ajoute = true;
+    }
+}

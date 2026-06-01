@@ -1,20 +1,10 @@
 @page "/producteur"
-@inject HttpClient Http
+@inject IHttpClientFactory HttpFactory
 @inject NavigationManager Navigation
 
-<PageTitle>Mon Espace Producteur - GreenMarket</PageTitle>
+<PageTitle>Espace Producteur - GreenMarket</PageTitle>
 
-<div class="page-header">
-    <div class="page-header-row">
-        <div class="page-header-icon">
-            <FluentIcon Value="@(new Icons.Filled.Size24.BuildingShop())" Color="@Color.Custom" CustomColor="white" />
-        </div>
-        <div>
-            <h2 class="page-title">Mon Espace Producteur</h2>
-            <p class="page-subtitle">Gérez votre profil et votre activité sur GreenMarket</p>
-        </div>
-    </div>
-</div>
+<h1 class="page-title">Espace Producteur</h1>
 
 <AuthorizeView Roles="Producteur,Admin">
     <Authorized>
@@ -22,7 +12,7 @@
         {
             <div class="loading-container">
                 <FluentProgressRing />
-                <span class="loading-text">Chargement de votre profil...</span>
+                <span class="loading-text">Chargement de votre espace...</span>
             </div>
         }
         else if (!string.IsNullOrEmpty(_erreur))
@@ -31,64 +21,41 @@
         }
         else if (_producteur is null)
         {
-            <FluentCard Style="padding: 32px; max-width: 500px; border-radius: 20px;">
-                <FluentStack Orientation="Orientation.Vertical" VerticalGap="20">
+            <div class="form-card">
+                <FluentStack Orientation="Orientation.Vertical" VerticalGap="16">
                     <FluentIcon Value="@(new Icons.Regular.Size32.PersonAdd())" Color="@Color.Accent" />
                     <FluentLabel Typo="Typography.Header">Profil non créé</FluentLabel>
                     <FluentLabel>
                         Vous avez le rôle Producteur mais vous n'avez pas encore créé votre profil sur GreenMarket.
                     </FluentLabel>
-                    <FluentButton Appearance="Appearance.Accent"
-                                  OnClick="@(() => Navigation.NavigateTo("/producteur/creer"))">
+                    <button class="btn-primary" @onclick="@(() => Navigation.NavigateTo("/producteur/creer"))">
                         Créer mon profil producteur
-                    </FluentButton>
+                    </button>
                 </FluentStack>
-            </FluentCard>
+            </div>
         }
         else
         {
-            <div class="producteur-card">
-                <FluentStack Orientation="Orientation.Horizontal" VerticalAlignment="VerticalAlignment.Center" HorizontalGap="16">
-                    <FluentIcon Value="@(new Icons.Filled.Size32.ShoppingBag())" Color="@Color.Custom" CustomColor="#2d7a4f" />
-                    <FluentLabel Typo="Typography.Header">@_producteur.NomProducteur</FluentLabel>
-                </FluentStack>
+            <p class="page-subtitle">@_producteur.NomProducteur — @_producteur.Adresse</p>
 
-                <div class="producteur-info-grid">
-                    <div class="info-item">
-                        <label>Adresse</label>
-                        <p>@_producteur.Adresse</p>
-                    </div>
-                    <div class="info-item">
-                        <label>Membre depuis</label>
-                        <p>@_producteur.DateAdhesion.ToString("dd MMMM yyyy")</p>
-                    </div>
-                    @if (!string.IsNullOrEmpty(_producteur.Description))
-                    {
-                        <div class="info-item" style="grid-column: span 2;">
-                            <label>Description</label>
-                            <p>@_producteur.Description</p>
-                        </div>
-                    }
-                </div>
+            <div class="tabs">
+                <button class="tab @(_tab == Onglet.Produits ? "active" : "")" @onclick="@(() => _tab = Onglet.Produits)">Mes Produits</button>
+                <button class="tab @(_tab == Onglet.Commandes ? "active" : "")" @onclick="@(() => _tab = Onglet.Commandes)">Commandes</button>
+                <button class="tab @(_tab == Onglet.Stats ? "active" : "")" @onclick="@(() => _tab = Onglet.Stats)">Statistiques</button>
             </div>
 
-            <FluentStack Orientation="Orientation.Horizontal" HorizontalGap="16" Wrap="true">
-                <FluentCard Style="padding: 24px; border-radius: 16px; width: 220px; text-align: center;">
-                    <FluentStack Orientation="Orientation.Vertical" HorizontalAlignment="HorizontalAlignment.Center" VerticalGap="12">
-                        <FluentIcon Value="@(new Icons.Regular.Size24.BoxMultiple())" Color="@Color.Accent" />
-                        <FluentLabel Typo="Typography.Subject">Mes Produits</FluentLabel>
-                        <FluentLabel Style="font-size: 0.85rem; color: #888;">Disponible prochainement</FluentLabel>
-                    </FluentStack>
-                </FluentCard>
-
-                <FluentCard Style="padding: 24px; border-radius: 16px; width: 220px; text-align: center;">
-                    <FluentStack Orientation="Orientation.Vertical" HorizontalAlignment="HorizontalAlignment.Center" VerticalGap="12">
-                        <FluentIcon Value="@(new Icons.Regular.Size24.ClipboardTask())" Color="@Color.Accent" />
-                        <FluentLabel Typo="Typography.Subject">Mes Commandes</FluentLabel>
-                        <FluentLabel Style="font-size: 0.85rem; color: #888;">Disponible prochainement</FluentLabel>
-                    </FluentStack>
-                </FluentCard>
-            </FluentStack>
+            @switch (_tab)
+            {
+                case Onglet.Produits:
+                    @RenderProduits
+                    break;
+                case Onglet.Commandes:
+                    @RenderCommandes
+                    break;
+                case Onglet.Stats:
+                    @RenderStats
+                    break;
+            }
         }
     </Authorized>
     <NotAuthorized>
@@ -96,42 +63,452 @@
     </NotAuthorized>
 </AuthorizeView>
 
+@* ============================ ONGLET PRODUITS ============================ *@
 @code {
+    private RenderFragment RenderProduits => __builder =>
+    {
+        <div class="section-head">
+            <h2>Gestion des produits</h2>
+            <button class="btn-primary" @onclick="OuvrirAjout">
+                <FluentIcon Value="@(new Icons.Regular.Size16.Add())" Color="@Color.Custom" CustomColor="white" />
+                Ajouter un produit
+            </button>
+        </div>
+
+        @if (_mesProduits.Count == 0)
+        {
+            <div class="empty-state">
+                <div class="empty-icon">
+                    <FluentIcon Value="@(new Icons.Regular.Size24.BoxMultiple())" Color="@Color.Custom" CustomColor="#3a9d5d" />
+                </div>
+                <p>Vous n'avez pas encore de produit. Ajoutez votre premier produit !</p>
+            </div>
+        }
+        else
+        {
+            @foreach (var p in _mesProduits)
+            {
+                <div class="row-card">
+                    <div class="row-title">@p.Nom</div>
+                    <div class="row-field">
+                        <label>Prix</label>
+                        <span>@p.PrixUnitaire.ToString("0.00")€</span>
+                    </div>
+                    <div class="row-field">
+                        <label>Stock</label>
+                        <span>@(p.StockDisponible?.ToString() ?? "—") unités</span>
+                    </div>
+                    <div class="row-field">
+                        <label>Catégorie</label>
+                        <span>@p.CategorieLibelle</span>
+                    </div>
+                    <div class="row-field">
+                        <label>Score env.</label>
+                        <span>@(p.ScoreEnvironnemental?.ToString() ?? "—")%</span>
+                    </div>
+                    <div class="row-actions">
+                        <button class="edit" title="Modifier" @onclick="@(() => OuvrirEdition(p))">
+                            <FluentIcon Value="@(new Icons.Regular.Size20.Edit())" Color="@Color.Custom" CustomColor="#3a9d5d" />
+                        </button>
+                        <button class="del" title="Supprimer" @onclick="@(() => SupprimerProduit(p))">
+                            <FluentIcon Value="@(new Icons.Regular.Size20.Delete())" Color="@Color.Custom" CustomColor="#d35450" />
+                        </button>
+                    </div>
+                </div>
+            }
+        }
+    };
+
+    private RenderFragment RenderCommandes => __builder =>
+    {
+        <div class="section-head"><h2>Mes commandes</h2></div>
+
+        @if (_commandes is null)
+        {
+            <div class="loading-container"><FluentProgressRing /><span class="loading-text">Chargement...</span></div>
+        }
+        else if (_commandes.Count == 0)
+        {
+            <div class="empty-state">
+                <div class="empty-icon">
+                    <FluentIcon Value="@(new Icons.Regular.Size24.ClipboardTask())" Color="@Color.Custom" CustomColor="#3a9d5d" />
+                </div>
+                <p>Aucune commande pour le moment.</p>
+            </div>
+        }
+        else
+        {
+            <table class="gm-table">
+                <thead>
+                    <tr>
+                        <th>N° Commande</th>
+                        <th>Date</th>
+                        <th>Client</th>
+                        <th>Montant</th>
+                        <th>Statut</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var c in _commandes)
+                    {
+                        <tr>
+                            <td>#@c.CommandeId</td>
+                            <td>@c.DateCommande.ToString("dd/MM/yyyy")</td>
+                            <td>@(c.UtilisateurId.ToString()[..8])…</td>
+                            <td>@c.MontantTotal.ToString("0.00")€</td>
+                            <td><span class="status-badge @StatutClasse(c.StatutPaiement)">@c.StatutPaiement</span></td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        }
+    };
+
+    private RenderFragment RenderStats => __builder =>
+    {
+        <div class="section-head"><h2>Statistiques de vente</h2></div>
+
+        @if (_commandes is null)
+        {
+            <div class="loading-container"><FluentProgressRing /><span class="loading-text">Calcul des statistiques...</span></div>
+        }
+        else
+        {
+            <div class="stat-grid">
+                <div class="stat-tile">
+                    <div class="stat-tile-head">
+                        <FluentIcon Value="@(new Icons.Regular.Size20.BoxMultiple())" Color="@Color.Custom" CustomColor="#3a9d5d" />
+                        Produits vendus
+                    </div>
+                    <div class="stat-tile-value">@_produitsVendus</div>
+                    <div class="stat-tile-sub">Toutes commandes</div>
+                </div>
+                <div class="stat-tile orange">
+                    <div class="stat-tile-head">
+                        <FluentIcon Value="@(new Icons.Regular.Size20.Money())" Color="@Color.Custom" CustomColor="#e0922f" />
+                        Chiffre d'affaires
+                    </div>
+                    <div class="stat-tile-value">@_chiffreAffaires.ToString("0.00")€</div>
+                    <div class="stat-tile-sub">Cumulé</div>
+                </div>
+                <div class="stat-tile">
+                    <div class="stat-tile-head">
+                        <FluentIcon Value="@(new Icons.Regular.Size20.ReceiptMoney())" Color="@Color.Custom" CustomColor="#3a9d5d" />
+                        Commandes
+                    </div>
+                    <div class="stat-tile-value">@_commandes.Count</div>
+                    <div class="stat-tile-sub">Reçues</div>
+                </div>
+            </div>
+
+            <div class="panel">
+                <h3 style="margin-top:0; color:var(--gm-green-strong);">Produits les plus vendus</h3>
+                @if (_topProduits.Count == 0)
+                {
+                    <p style="color:var(--gm-muted);">Aucune vente enregistrée.</p>
+                }
+                else
+                {
+                    var max = _topProduits.Max(t => t.Quantite);
+                    var rang = 0;
+                    @foreach (var t in _topProduits)
+                    {
+                        rang++;
+                        <div class="rank-row">
+                            <span class="rank-num">@rang</span>
+                            <span style="min-width:160px; font-weight:600;">@t.Nom</span>
+                            <div class="rank-bar"><span style="width:@(max == 0 ? 0 : t.Quantite * 100 / max)%"></span></div>
+                            <span class="rank-count">@t.Quantite ventes</span>
+                        </div>
+                    }
+                }
+            </div>
+        }
+    };
+}
+
+@* ============================ FORMULAIRE PRODUIT (modal) ============================ *@
+@if (_formOuvert)
+{
+    <div class="gm-overlay" @onclick="FermerForm">
+        <div class="gm-modal" @onclick:stopPropagation="true">
+            <h3 style="margin-top:0; color:var(--gm-green-strong);">
+                @(_editId is null ? "Ajouter un produit" : "Modifier le produit")
+            </h3>
+
+            @if (!string.IsNullOrEmpty(_formErreur))
+            {
+                <FluentMessageBar Intent="MessageIntent.Error" Style="margin-bottom:12px;">@_formErreur</FluentMessageBar>
+            }
+
+            <EditForm Model="_form" OnValidSubmit="EnregistrerProduit">
+                <DataAnnotationsValidator />
+                <FluentStack Orientation="Orientation.Vertical" VerticalGap="14">
+                    <div>
+                        <FluentLabel>Nom *</FluentLabel>
+                        <FluentTextField @bind-Value="_form.Nom" Style="width:100%;" />
+                        <ValidationMessage For="@(() => _form.Nom)" />
+                    </div>
+                    <div>
+                        <FluentLabel>Description</FluentLabel>
+                        <FluentTextArea @bind-Value="_form.Description" Rows="3" Style="width:100%;" />
+                    </div>
+                    <FluentStack Orientation="Orientation.Horizontal" HorizontalGap="14">
+                        <div style="flex:1;">
+                            <FluentLabel>Prix (€) *</FluentLabel>
+                            <FluentNumberField @bind-Value="_form.PrixUnitaire" Step="0.10" Style="width:100%;" />
+                            <ValidationMessage For="@(() => _form.PrixUnitaire)" />
+                        </div>
+                        <div style="flex:1;">
+                            <FluentLabel>Catégorie *</FluentLabel>
+                            <FluentSelect TOption="CategorieDto"
+                                          Items="@_categories"
+                                          OptionText="@(c => c.Libelle)"
+                                          OptionValue="@(c => c.CategorieId.ToString())"
+                                          @bind-Value="_form.CategorieValue"
+                                          Style="width:100%;" />
+                        </div>
+                    </FluentStack>
+                    <FluentStack Orientation="Orientation.Horizontal" HorizontalGap="14">
+                        <div style="flex:1;">
+                            <FluentLabel>Score env. (0-100)</FluentLabel>
+                            <FluentNumberField @bind-Value="_form.ScoreEnvironnemental" Style="width:100%;" />
+                        </div>
+                        <div style="flex:1;">
+                            <FluentLabel>Stock (unités)</FluentLabel>
+                            <FluentNumberField @bind-Value="_form.Quantite" Style="width:100%;" />
+                        </div>
+                    </FluentStack>
+                    <div>
+                        <FluentLabel>Traçabilité</FluentLabel>
+                        <FluentTextField @bind-Value="_form.Tracabilite" Placeholder="Ex: Cultivé à 13km, récolté ce matin" Style="width:100%;" />
+                    </div>
+
+                    <FluentStack Orientation="Orientation.Horizontal" HorizontalGap="12">
+                        <button type="submit" class="btn-primary" disabled="@_envoi">
+                            @(_envoi ? "Enregistrement..." : "Enregistrer")
+                        </button>
+                        <button type="button" class="btn-ghost" @onclick="FermerForm">Annuler</button>
+                    </FluentStack>
+                </FluentStack>
+            </EditForm>
+        </div>
+    </div>
+}
+
+@code {
+    private HttpClient Http => _http ??= HttpFactory.CreateClient("GreenMarket.Authorized");
+    private HttpClient? _http;
+
+    private enum Onglet { Produits, Commandes, Stats }
+    private Onglet _tab = Onglet.Produits;
+
     private ProducteurDto? _producteur;
     private bool _loading = true;
     private string? _erreur;
+
+    private List<ProduitDto> _mesProduits = new();
+    private List<CategorieDto> _categories = new();
+    private List<CommandeClientDto>? _commandes;
+
+    // statistiques dérivées
+    private int _produitsVendus;
+    private decimal _chiffreAffaires;
+    private List<(string Nom, int Quantite)> _topProduits = new();
+
+    // formulaire
+    private bool _formOuvert;
+    private bool _envoi;
+    private string? _formErreur;
+    private int? _editId;
+    private int? _editStockId;
+    private readonly ProduitForm _form = new();
 
     protected override async Task OnInitializedAsync()
     {
         try
         {
             var moi = await Http.GetFromJsonAsync<UtilisateurInfo>("api/utilisateurs/me");
-
-            if (moi is null)
-            {
-                _erreur = "Impossible de récupérer vos informations.";
-                return;
-            }
-
-            if (!moi.EstProducteur)
-                return;
+            if (moi is null) { _erreur = "Impossible de récupérer vos informations."; return; }
+            if (!moi.EstProducteur) return;
 
             var tous = await Http.GetFromJsonAsync<List<ProducteurDto>>("api/producteurs");
             _producteur = tous?.FirstOrDefault(p => p.UtilisateurId == moi.KeycloakId);
+            if (_producteur is null) return;
+
+            _categories = await Http.GetFromJsonAsync<List<CategorieDto>>("api/categories") ?? new();
+            await ChargerProduits();
+            await ChargerCommandes();
         }
-        catch (AccessTokenNotAvailableException ex)
+        catch (AccessTokenNotAvailableException ex) { ex.Redirect(); }
+        catch (HttpRequestException ex) { _erreur = $"Erreur API : {ex.Message}"; }
+        finally { _loading = false; }
+    }
+
+    private async Task ChargerProduits()
+    {
+        var tous = await Http.GetFromJsonAsync<List<ProduitDto>>("api/produits") ?? new();
+        _mesProduits = tous.Where(p => p.ProducteurId == _producteur!.ProducteurId).ToList();
+    }
+
+    private async Task ChargerCommandes()
+    {
+        try
         {
-            ex.Redirect();
+            _commandes = await Http.GetFromJsonAsync<List<CommandeClientDto>>(
+                $"api/commandes/producteur/{_producteur!.ProducteurId}") ?? new();
+            CalculerStats();
         }
-        catch (HttpRequestException ex)
+        catch
         {
-            _erreur = $"Erreur API : {ex.Message}";
+            _commandes = new();
         }
-        finally
+    }
+
+    private void CalculerStats()
+    {
+        var id = _producteur!.ProducteurId;
+        var lignes = _commandes!.SelectMany(c => c.Lignes).Where(l => l.ProducteurId == id).ToList();
+        _produitsVendus = lignes.Sum(l => l.Quantite);
+        _chiffreAffaires = lignes.Sum(l => l.SousTotal);
+        _topProduits = lignes
+            .GroupBy(l => l.ProduitId)
+            .Select(g => (Nom: _mesProduits.FirstOrDefault(p => p.ProduitId == g.Key)?.Nom ?? $"Produit #{g.Key}",
+                          Quantite: g.Sum(x => x.Quantite)))
+            .OrderByDescending(x => x.Quantite)
+            .Take(3)
+            .ToList();
+    }
+
+    private static string StatutClasse(string statut)
+    {
+        var s = statut.ToLowerInvariant();
+        if (s.Contains("pay")) return "status-paye";
+        if (s.Contains("attente")) return "status-attente";
+        if (s.Contains("echec") || s.Contains("refus") || s.Contains("annul")) return "status-echec";
+        return "status-prep";
+    }
+
+    private void OuvrirAjout()
+    {
+        _editId = null;
+        _editStockId = null;
+        _form.Reset(_categories.FirstOrDefault()?.CategorieId);
+        _formErreur = null;
+        _formOuvert = true;
+    }
+
+    private async Task OuvrirEdition(ProduitDto p)
+    {
+        _editId = p.ProduitId;
+        _form.Nom = p.Nom;
+        _form.Description = p.Description;
+        _form.PrixUnitaire = p.PrixUnitaire;
+        _form.CategorieValue = p.CategorieId.ToString();
+        _form.ScoreEnvironnemental = p.ScoreEnvironnemental;
+        _form.Tracabilite = p.Tracabilite;
+        _form.Quantite = p.StockDisponible ?? 0;
+        _formErreur = null;
+        _formOuvert = true;
+
+        // Récupère l'identifiant de stock pour permettre sa mise à jour
+        try
         {
-            _loading = false;
+            var stock = await Http.GetFromJsonAsync<StockDto>($"api/stocks/produit/{p.ProduitId}");
+            _editStockId = stock?.StockId;
+        }
+        catch { _editStockId = null; }
+    }
+
+    private void FermerForm() => _formOuvert = false;
+
+    private async Task EnregistrerProduit()
+    {
+        _envoi = true;
+        _formErreur = null;
+        try
+        {
+            int.TryParse(_form.CategorieValue, out var catId);
+            var dto = new ProduitCreateDto(
+                Nom: _form.Nom!.Trim(),
+                Description: _form.Description,
+                PrixUnitaire: _form.PrixUnitaire,
+                CategorieId: catId,
+                ScoreEnvironnemental: _form.ScoreEnvironnemental,
+                Tracabilite: _form.Tracabilite,
+                QuantiteInitiale: _form.Quantite,
+                SeuilAlerte: 5);
+
+            HttpResponseMessage resp;
+            if (_editId is null)
+            {
+                resp = await Http.PostAsJsonAsync("api/produits", dto);
+            }
+            else
+            {
+                resp = await Http.PutAsJsonAsync($"api/produits/{_editId}", dto);
+                // La modification produit ne touche pas au stock : on le met à jour séparément.
+                if (resp.IsSuccessStatusCode && _editStockId is int stockId)
+                {
+                    await Http.PutAsJsonAsync($"api/stocks/{stockId}",
+                        new StockUpdateDto(_form.Quantite, null));
+                }
+            }
+
+            if (!resp.IsSuccessStatusCode)
+            {
+                _formErreur = $"Échec de l'enregistrement ({(int)resp.StatusCode}).";
+                return;
+            }
+
+            _formOuvert = false;
+            await ChargerProduits();
+            CalculerStats();
+        }
+        catch (AccessTokenNotAvailableException ex) { ex.Redirect(); }
+        catch (Exception ex) { _formErreur = ex.Message; }
+        finally { _envoi = false; }
+    }
+
+    private async Task SupprimerProduit(ProduitDto p)
+    {
+        var resp = await Http.DeleteAsync($"api/produits/{p.ProduitId}");
+        if (resp.IsSuccessStatusCode)
+        {
+            await ChargerProduits();
+            CalculerStats();
         }
     }
 
     private record UtilisateurInfo(Guid KeycloakId, DateTimeOffset DateInscription, bool EstProducteur);
+
+    private record CommandeClientDto(
+        int CommandeId,
+        Guid UtilisateurId,
+        DateTimeOffset DateCommande,
+        decimal MontantTotal,
+        string StatutPaiement,
+        List<LigneClientDto> Lignes);
+
+    private record LigneClientDto(int ProduitId, int ProducteurId, int Quantite, decimal PrixUnitaire, decimal SousTotal);
+
+    private class ProduitForm
+    {
+        [System.ComponentModel.DataAnnotations.Required(ErrorMessage = "Le nom est obligatoire.")]
+        public string? Nom { get; set; }
+        public string? Description { get; set; }
+        [System.ComponentModel.DataAnnotations.Range(0.0, 1_000_000.0, ErrorMessage = "Prix invalide.")]
+        public decimal PrixUnitaire { get; set; }
+        public string CategorieValue { get; set; } = "0";
+        public int? ScoreEnvironnemental { get; set; }
+        public string? Tracabilite { get; set; }
+        public int Quantite { get; set; }
+
+        public void Reset(int? categorieParDefaut)
+        {
+            Nom = null; Description = null; PrixUnitaire = 0;
+            CategorieValue = (categorieParDefaut ?? 0).ToString();
+            ScoreEnvironnemental = null; Tracabilite = null; Quantite = 0;
+        }
+    }
 }

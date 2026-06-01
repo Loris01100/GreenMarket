@@ -1,0 +1,89 @@
+@page "/panier"
+@implements IDisposable
+@inject CartService Cart
+@inject NavigationManager Navigation
+
+<PageTitle>Mon Panier - GreenMarket</PageTitle>
+
+<h1 class="page-title">Mon Panier</h1>
+
+@if (Cart.Items.Count == 0)
+{
+    <div class="empty-state">
+        <div class="empty-icon">
+            <FluentIcon Value="@(new Icons.Regular.Size24.Cart())" Color="@Color.Custom" CustomColor="#3a9d5d" />
+        </div>
+        <p>Votre panier est vide.</p>
+        <a class="btn-primary" href="/catalogue" style="margin-top:12px;">Parcourir le catalogue</a>
+    </div>
+}
+else
+{
+    <div class="cart-layout">
+        <div>
+            @foreach (var item in Cart.Items)
+            {
+                <div class="cart-line">
+                    <div class="cart-line-thumb">
+                        <FluentIcon Value="@(new Icons.Regular.Size24.LeafOne())" Color="@Color.Custom" CustomColor="#8cc79f" />
+                    </div>
+                    <div class="cart-line-info">
+                        <h4>@item.Nom</h4>
+                        <p>@item.NomProducteur</p>
+                        <div class="qty-control" style="margin-top:8px;">
+                            <button @onclick="@(() => Cart.DefinirQuantite(item.ProduitId, item.Quantite - 1))">−</button>
+                            <span class="qty-val">@item.Quantite</span>
+                            <button @onclick="@(() => Cart.DefinirQuantite(item.ProduitId, item.Quantite + 1))"
+                                    disabled="@(item.StockDisponible is int s && item.Quantite >= s)">+</button>
+                        </div>
+                    </div>
+                    <div class="cart-line-right">
+                        <button class="icon-btn" title="Supprimer" @onclick="@(() => Cart.Supprimer(item.ProduitId))">
+                            <FluentIcon Value="@(new Icons.Regular.Size20.Delete())" Color="@Color.Custom" CustomColor="#d35450" />
+                        </button>
+                        <div class="cart-line-unit">@item.PrixUnitaire.ToString("0.00")€ / unité</div>
+                        <div class="cart-line-total">@item.SousTotal.ToString("0.00")€</div>
+                    </div>
+                </div>
+            }
+        </div>
+
+        <div class="summary-card">
+            <h3>Récapitulatif</h3>
+            <div class="summary-row">
+                <span>Sous-total</span>
+                <span>@Cart.SousTotal.ToString("0.00")€</span>
+            </div>
+            <div class="summary-row">
+                <span>Livraison</span>
+                <span class="free">Gratuite</span>
+            </div>
+            <div class="summary-total">
+                <span>Total</span>
+                <span>@Cart.SousTotal.ToString("0.00")€</span>
+            </div>
+
+            <AuthorizeView>
+                <Authorized>
+                    <button class="btn-primary btn-block" @onclick="@(() => Navigation.NavigateTo("/paiement"))">
+                        Valider la commande
+                        <FluentIcon Value="@(new Icons.Regular.Size16.ArrowRight())" Color="@Color.Custom" CustomColor="white" />
+                    </button>
+                </Authorized>
+                <NotAuthorized>
+                    <button class="btn-primary btn-block" @onclick="BeginLogin">
+                        Se connecter pour commander
+                    </button>
+                    <p class="summary-note">Authentification requise pour valider votre commande</p>
+                </NotAuthorized>
+            </AuthorizeView>
+        </div>
+    </div>
+}
+
+@code {
+    protected override void OnInitialized() => Cart.OnChange += StateHasChanged;
+    public void Dispose() => Cart.OnChange -= StateHasChanged;
+
+    private void BeginLogin() => Navigation.NavigateToLogin("authentication/login");
+}

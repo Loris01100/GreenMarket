@@ -1,5 +1,5 @@
 @page "/producteur/creer"
-@inject HttpClient Http
+@inject IHttpClientFactory HttpFactory
 @inject NavigationManager Navigation
 
 <PageTitle>Créer mon profil - GreenMarket</PageTitle>
@@ -75,6 +75,9 @@
 </AuthorizeView>
 
 @code {
+    private HttpClient Http => _http ??= HttpFactory.CreateClient("GreenMarket.Authorized");
+    private HttpClient? _http;
+
     private readonly FormulaireProducteur _form = new();
     private bool _envoi;
     private string? _erreur;
