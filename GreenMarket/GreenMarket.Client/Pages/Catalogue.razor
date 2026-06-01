@@ -1,0 +1,154 @@
+@page "/"
+@page "/catalogue"
+@inject HttpClient Http
+@inject NavigationManager Navigation
+
+<PageTitle>Catalogue - GreenMarket</PageTitle>
+
+<h1 class="page-title">Nos Produits Locaux</h1>
+<p class="page-subtitle">Découvrez notre sélection de produits frais et écoresponsables</p>
+
+<div class="filter-bar">
+    <div class="filter-grow">
+        <FluentSearch @bind-Value="_recherche" @bind-Value:after="Filtrer"
+                      Placeholder="Rechercher un produit..." Style="width:100%;" />
+    </div>
+    <div class="filter-grow">
+        <FluentSelect TOption="CategorieDto"
+                      Items="@_categoriesAvecToutes"
+                      OptionText="@(c => c.Libelle)"
+                      OptionValue="@(c => c.CategorieId.ToString())"
+                      @bind-Value="_categorieValue"
+                      @bind-Value:after="Filtrer"
+                      Style="width:100%;" />
+    </div>
+    <div class="filter-score">
+        <label>Score environnemental minimum : @_scoreMin%</label>
+        <input type="range" min="0" max="100" step="5" value="@_scoreMin"
+               @oninput="OnScoreInput" />
+    </div>
+</div>
+
+@if (_loading)
+{
+    <div class="loading-container">
+        <FluentProgressRing />
+        <span class="loading-text">Chargement du catalogue...</span>
+    </div>
+}
+else if (!string.IsNullOrEmpty(_erreur))
+{
+    <FluentMessageBar Intent="MessageIntent.Error">@_erreur</FluentMessageBar>
+}
+else if (_produitsFiltres.Count == 0)
+{
+    <div class="empty-state">
+        <div class="empty-icon">
+            <FluentIcon Value="@(new Icons.Regular.Size32.LeafOne())" Color="@Color.Custom" CustomColor="#3a9d5d" />
+        </div>
+        <p>Aucun produit ne correspond à votre recherche.</p>
+    </div>
+}
+else
+{
+    <div class="product-grid">
+        @foreach (var p in _produitsFiltres)
+        {
+            <div class="product-card" @onclick="@(() => Navigation.NavigateTo($"/produit/{p.ProduitId}"))">
+                <div class="product-thumb">
+                    <FluentIcon Value="@(new Icons.Regular.Size32.LeafOne())" Color="@Color.Custom" CustomColor="#8cc79f" />
+                </div>
+                <div class="product-body">
+                    <p class="product-name">@p.Nom</p>
+                    <p class="product-producer">@p.NomProducteur</p>
+                    @if (!string.IsNullOrWhiteSpace(p.Description))
+                    {
+                        <p class="product-desc">@p.Description</p>
+                    }
+                    <div class="product-meta">
+                        <span class="product-price">@p.PrixUnitaire.ToString("0.00")€</span>
+                        @if (p.ScoreEnvironnemental is int score)
+                        {
+                            <span class="eco-badge">
+                                <FluentIcon Value="@(new Icons.Regular.Size16.LeafOne())" Color="@Color.Custom" CustomColor="#3a9d5d" />
+                                @score%
+                            </span>
+                        }
+                    </div>
+                    @if (p.StockDisponible is > 0)
+                    {
+                        <span class="stock-pill">En stock</span>
+                    }
+                    else
+                    {
+                        <span class="stock-pill out">Rupture de stock</span>
+                    }
+                </div>
+            </div>
+        }
+    </div>
+}
+
+@code {
+    private List<ProduitDto> _produits = new();
+    private List<ProduitDto> _produitsFiltres = new();
+    private List<CategorieDto> _categoriesAvecToutes = new();
+
+    private bool _loading = true;
+    private string? _erreur;
+
+    private string _recherche = string.Empty;
+    private string _categorieValue = "0"; // 0 = toutes
+    private int _scoreMin = 0;
+
+    protected override async Task OnInitializedAsync()
+    {
+        try
+        {
+            var produits = await Http.GetFromJsonAsync<List<ProduitDto>>("api/produits");
+            _produits = produits ?? new();
+
+            var categories = await Http.GetFromJsonAsync<List<CategorieDto>>("api/categories") ?? new();
+            _categoriesAvecToutes = new List<CategorieDto> { new(0, "Toutes les catégories", null) };
+            _categoriesAvecToutes.AddRange(categories);
+
+            Filtrer();
+        }
+        catch (Exception ex)
+        {
+            _erreur = $"Impossible de charger le catalogue : {ex.Message}";
+        }
+        finally
+        {
+            _loading = false;
+        }
+    }
+
+    private void OnScoreInput(ChangeEventArgs e)
+    {
+        _scoreMin = int.TryParse(e.Value?.ToString(), out var v) ? v : 0;
+        Filtrer();
+    }
+
+    private void Filtrer()
+    {
+        IEnumerable<ProduitDto> q = _produits;
+
+        if (!string.IsNullOrWhiteSpace(_recherche))
+        {
+            var r = _recherche.Trim();
+            q = q.Where(p =>
+                p.Nom.Contains(r, StringComparison.OrdinalIgnoreCase) ||
+                p.NomProducteur.Contains(r, StringComparison.OrdinalIgnoreCase) ||
+                (p.Description?.Contains(r, StringComparison.OrdinalIgnoreCase) ?? false));
+        }
+
+        if (int.TryParse(_categorieValue, out var catId) && catId > 0)
+            q = q.Where(p => p.CategorieId == catId);
+
+        if (_scoreMin > 0)
+            q = q.Where(p => (p.ScoreEnvironnemental ?? 0) >= _scoreMin);
+
+        _produitsFiltres = q.ToList();
+    }
+}

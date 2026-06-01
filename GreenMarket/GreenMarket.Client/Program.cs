@@ -1,4 +1,5 @@
 using GreenMarket.Client;
+using GreenMarket.Client.Services;
 using Microsoft.AspNetCore.Components.Web;
 using Microsoft.AspNetCore.Components.WebAssembly.Hosting;
 using Microsoft.AspNetCore.Components.WebAssembly.Authentication;
@@ -10,7 +11,8 @@ builder.RootComponents.Add<HeadOutlet>("head::after");
 
 var apiBaseUrl = "http://localhost:5210";
 
-builder.Services.AddHttpClient("GreenMarket.API", client =>
+// Client authentifié : attache le jeton Keycloak (appels protégés — espace producteur, etc.).
+builder.Services.AddHttpClient("GreenMarket.Authorized", client =>
     {
         client.BaseAddress = new Uri(apiBaseUrl);
     })
@@ -24,8 +26,15 @@ builder.Services.AddHttpClient("GreenMarket.API", client =>
         return handler;
     });
 
+// Client anonyme : utilisé par défaut pour la consultation publique du catalogue (F2),
+// accessible sans authentification. N'exige aucun jeton.
+builder.Services.AddHttpClient("GreenMarket.Public", client =>
+{
+    client.BaseAddress = new Uri(apiBaseUrl);
+});
+
 builder.Services.AddScoped(sp =>
-    sp.GetRequiredService<IHttpClientFactory>().CreateClient("GreenMarket.API"));
+    sp.GetRequiredService<IHttpClientFactory>().CreateClient("GreenMarket.Public"));
 
 builder.Services.AddOidcAuthentication(options =>
 {
@@ -35,5 +44,7 @@ builder.Services.AddOidcAuthentication(options =>
 });
 
 builder.Services.AddFluentUIComponents();
+
+builder.Services.AddScoped<CartService>();
 
 await builder.Build().RunAsync();
