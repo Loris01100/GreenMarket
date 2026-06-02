@@ -1,5 +1,8 @@
 @page "/paiement"
 @inject CartService Cart
+@inject IHttpClientFactory HttpClientFactory
+@inject NavigationManager Nav
+@inject IJSRuntime JS
 
 <PageTitle>Validation de la commande - GreenMarket</PageTitle>
 
@@ -13,6 +16,8 @@
 <AuthorizeView>
     <Authorized>
         <div class="detail-grid">
+
+            <!-- Récapitulatif -->
             <div class="panel">
                 <h3 style="margin-top:0; color:var(--gm-green-strong);">Récapitulatif de la commande</h3>
                 @foreach (var item in Cart.Items)
@@ -28,19 +33,160 @@
                 </div>
             </div>
 
+            <!-- Paiement -->
             <div class="panel">
                 <h3 style="margin-top:0; color:var(--gm-green-strong);">
-                    <FluentIcon Value="@(new Icons.Regular.Size20.LockClosed())" Color="@Color.Custom" CustomColor="#3a9d5d" />
+                    <FluentIcon Value="@(new Icons.Regular.Size20.LockClosed())"
+                                Color="@Color.Custom" CustomColor="#3a9d5d" />
                     Paiement sécurisé
                 </h3>
-                <FluentMessageBar Intent="MessageIntent.Info" Style="margin-top:12px;">
-                    Le module de paiement sécurisé (Stripe) sera intégré prochainement.
-                    Le récapitulatif ci-contre reflète votre panier.
-                </FluentMessageBar>
+
+                @if (_erreur is not null)
+                {
+                    <FluentMessageBar Intent="MessageIntent.Error" Style="margin-bottom:12px;">
+                        @_erreur
+                    </FluentMessageBar>
+                }
+
+                @if (_succes)
+                {
+                    <FluentMessageBar Intent="MessageIntent.Success">
+                        Paiement confirmé ! Redirection en cours…
+                    </FluentMessageBar>
+                }
+                else
+                {
+                    <!-- Stripe monte le formulaire carte ici -->
+                    <div id="card-element" style="margin: 16px 0; padding: 12px; border: 1px solid #ddd; border-radius: 6px;"></div>
+
+                    <FluentButton Appearance="Appearance.Accent"
+                                  Style="width:100%; margin-top:8px;"
+                                  Loading="@_chargement"
+                                  Disabled="@(_chargement || !_stripeReady)"
+                                  OnClick="PayerAsync">
+                        @if (_chargement)
+                        {
+                            <span>Traitement en cours…</span>
+                        }
+                        else
+                        {
+                            <span>Payer @Cart.SousTotal.ToString("0.00") €</span>
+                        }
+                    </FluentButton>
+
+                    <p style="font-size:0.75rem; color:#777; margin-top:10px; text-align:center;">
+                        Paiement sécurisé par Stripe. Vos données bancaires ne nous sont jamais transmises.
+                    </p>
+                }
             </div>
+
         </div>
     </Authorized>
     <NotAuthorized>
         <RedirectToLogin />
     </NotAuthorized>
 </AuthorizeView>
+
+@code {
+    private bool    _chargement  = false;
+    private bool    _stripeReady = false;
+    private bool    _succes      = false;
+    private string? _erreur      = null;
+    private string? _clientSecret;
+    private int     _commandeId;
+    private HttpClient _http = default!;
+
+    protected override void OnInitialized()
+    {
+        _http = HttpClientFactory.CreateClient("GreenMarket.Authorized");
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (!firstRender) return;
+
+        try
+        {
+            var response = await _http.PostAsJsonAsync("api/commandes", new
+            {
+                lignes = Cart.Items.Select(i => new
+                {
+                    produitId    = i.ProduitId,
+                    producteurId = i.ProducteurId,
+                    quantite     = i.Quantite,
+                    prixUnitaire = i.PrixUnitaire
+                })
+            });
+
+            if (!response.IsSuccessStatusCode)
+            {
+                _erreur = "Impossible de créer la commande. Veuillez réessayer.";
+                StateHasChanged();
+                return;
+            }
+
+            var result = await response.Content.ReadFromJsonAsync<CreerCommandeResult>();
+            _commandeId   = result!.Commande.CommandeId;
+            _clientSecret = result.StripeClientSecret;
+
+            await JS.InvokeVoidAsync("stripeInterop.initialize", "pk_test_51TPADcEoAX0tdWGFG6wYEYx9ndJzSUM4X5xWyMKUOsvxcdZmjKmI5lqDj1hMLG9Z8SwvUpbWvcDO7Rk3kw4vOeCl00Gg69UpY2");
+
+            _stripeReady = true;
+            StateHasChanged();
+        }
+        catch (Exception ex)
+        {
+            _erreur = $"Erreur d'initialisation : {ex.Message}";
+            StateHasChanged();
+        }
+    }
+
+    private async Task PayerAsync()
+    {
+        _chargement = true;
+        _erreur     = null;
+        StateHasChanged();
+
+        try
+        {
+            var stripeResult = await JS.InvokeAsync<StripeResult>(
+                "stripeInterop.confirmPayment", _clientSecret);
+
+            if (!stripeResult.Success)
+            {
+                _erreur = stripeResult.Error ?? "Paiement refusé.";
+                return;
+            }
+
+            var validation = await _http.PostAsJsonAsync(
+                $"api/commandes/{_commandeId}/valider-paiement",
+                new { paymentIntentId = stripeResult.PaymentIntentId });
+
+            if (!validation.IsSuccessStatusCode)
+            {
+                _erreur = "Erreur lors de la validation. Contactez le support.";
+                return;
+            }
+
+            _succes = true;
+            Cart.Vider();
+            StateHasChanged();
+
+            await Task.Delay(2000);
+            Nav.NavigateTo("/mes-commandes");
+        }
+        catch (Exception ex)
+        {
+            _erreur = $"Erreur inattendue : {ex.Message}";
+        }
+        finally
+        {
+            _chargement = false;
+            StateHasChanged();
+        }
+    }
+
+    private record StripeResult(bool Success, string? PaymentIntentId, string? Error);
+    private record CreerCommandeResult(CommandeSummary Commande, string StripeClientSecret);
+    private record CommandeSummary(int CommandeId, decimal MontantTotal);
+}
