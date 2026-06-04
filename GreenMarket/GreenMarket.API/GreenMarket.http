@@ -3,7 +3,7 @@
 ### Lancer l'API : dotnet run --project GreenMarket.API
 ### ============================================================
 
-@baseUrl    = http://localhost:5120
+@baseUrl    = http://localhost:5210
 @keycloak   = http://localhost:8080
 @realm      = greenmarket
 @clientId   = greenmarket-api

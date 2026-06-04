@@ -22,5 +22,8 @@ public class Commande
     [MaxLength(50)]
     public string StatutPaiement { get; set; } = "en_attente";
 
+    [MaxLength(100)]
+    public string? StripePaymentIntentId { get; set; }
+
     public virtual ICollection<LigneCommande> LignesCommande { get; set; } = new List<LigneCommande>();
 }

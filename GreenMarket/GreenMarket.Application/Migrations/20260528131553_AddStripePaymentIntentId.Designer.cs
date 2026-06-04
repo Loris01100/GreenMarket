@@ -3,6 +3,7 @@ using System;
 using GreenMarket.Application.Data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 
@@ -11,9 +12,11 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace GreenMarket.Application.Migrations
 {
     [DbContext(typeof(GreenMarketDbContext))]
-    partial class GreenMarketDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260528131553_AddStripePaymentIntentId")]
+    partial class AddStripePaymentIntentId
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -48,32 +51,6 @@ namespace GreenMarket.Application.Migrations
                         .IsUnique();
 
                     b.ToTable("categorie", "greenmarket");
-
-                    b.HasData(
-                        new
-                        {
-                            CategorieId = 1,
-                            Description = "Légumes frais de saison",
-                            Libelle = "Légumes"
-                        },
-                        new
-                        {
-                            CategorieId = 2,
-                            Description = "Fruits locaux et de saison",
-                            Libelle = "Fruits"
-                        },
-                        new
-                        {
-                            CategorieId = 3,
-                            Description = "Lait, fromage, yaourt, beurre",
-                            Libelle = "Produits laitiers"
-                        },
-                        new
-                        {
-                            CategorieId = 4,
-                            Description = "Oeufs, miel, confitures artisanales",
-                            Libelle = "Produits fermiers"
-                        });
                 });
 
             modelBuilder.Entity("GreenMarket.Domain.Entities.Commande", b =>
