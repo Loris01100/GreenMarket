@@ -2,6 +2,7 @@ using System.Security.Claims;
 using System.Text.Json;
 using GreenMarket.Application.Data;
 using GreenMarket.Application.Interfaces;
+using GreenMarket.Application.Services;
 using GreenMarket.Application.UseCases.Producteurs;
 using GreenMarket.Application.UseCases.Commandes;
 using GreenMarket.API.Controllers;
@@ -92,6 +93,9 @@ builder.Services.AddScoped<ICategorieRepository, CategorieRepository>();
 builder.Services.AddScoped<IStockRepository, StockRepository>();
 builder.Services.AddScoped<ICommandeRepository, CommandeRepository>();
 
+// Configuration du ChatbotService avec HttpClient
+builder.Services.AddHttpClient<IChatbotService, ChatbotService>();
+
 builder.Services.AddHttpClient<IKeycloakService, KeycloakService>();
 
 builder.Services.Configure<StripeOptions>(
@@ -117,5 +121,6 @@ app.UseAuthentication();
 app.UseAuthorization();
 app.MapProducteursEndpoints();
 app.MapUtilisateursEndpoints();
+app.MapChatbotEndpoints();
 app.MapControllers();
 app.Run();

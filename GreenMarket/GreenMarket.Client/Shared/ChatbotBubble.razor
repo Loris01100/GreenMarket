@@ -1,0 +1,292 @@
+﻿@using GreenMarket.Shared.DTOs
+@using System.Net.Http.Json
+@inject HttpClient Http
+@inject IJSRuntime JSRuntime
+
+<div class="chatbot-container">
+    <div class="chat-window-wrapper">
+        <div class="chat-window shadow-lg @(isOpen ? "open" : "")">
+            <div class="chat-header">
+                <div class="header-content">
+                    <div class="bot-avatar-header">
+                        <i class="bi bi-leaf-fill"></i>
+                    </div>
+                    <div class="bot-info">
+                        <span class="bot-name">GreenBot</span>
+                        <span class="bot-status">En ligne</span>
+                    </div>
+                </div>
+                <button class="close-button" @onclick="ToggleChat">&times;</button>
+            </div>
+            
+            <div class="chat-messages p-3" @ref="_messagesContainer">
+                @foreach (var msg in messages)
+                {
+                    <div class="message-wrapper @(msg.Sender == "Moi" ? "user" : "bot")">
+                        <div class="message @(msg.Sender == "Moi" ? "user-message" : "bot-message")">
+                            @msg.Text
+                        </div>
+                    </div>
+                }
+                @if (isLoading)
+                {
+                    <div class="message-wrapper bot">
+                        <div class="message bot-message typing-indicator">
+                            <span class="dot"></span><span class="dot"></span><span class="dot"></span>
+                        </div>
+                    </div>
+                }
+            </div>
+
+            <div class="chat-input-footer">
+                <form @onsubmit="SendMessage" class="input-form">
+                    <input type="text" class="chat-input-field" 
+                           @bind="newMessage" @bind:event="oninput" 
+                           placeholder="Posez votre question..." disabled="@isLoading" />
+                    <button type="submit" class="send-button" disabled="@(string.IsNullOrWhiteSpace(newMessage) || isLoading)">
+                        <i class="bi bi-arrow-up"></i>
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    @if (!isOpen)
+    {
+        <button class="chatbot-bubble shadow-lg" @onclick="ToggleChat">
+            <i class="bi bi-chat-quote-fill fs-4"></i>
+        </button>
+    }
+</div>
+
+<style>
+    .chatbot-container {
+        position: fixed;
+        bottom: 20px;
+        right: 20px;
+        z-index: 1050;
+        width: 370px; /* Match window width */
+        height: 650px; /* Accommodate window and bubble */
+        pointer-events: none; /* Allow clicks to pass through the container */
+    }
+
+    .chatbot-bubble {
+        position: absolute;
+        bottom: 0;
+        right: 0;
+        width: 60px;
+        height: 60px;
+        border-radius: 50%;
+        background: linear-gradient(45deg, #2ddc74, #1a9c50);
+        color: white;
+        border: none;
+        cursor: pointer;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        transition: transform 0.2s ease-in-out, box-shadow 0.2s;
+        pointer-events: auto; /* Make the bubble clickable */
+    }
+    
+    .chatbot-bubble:hover {
+        transform: scale(1.1);
+    }
+
+    .chat-window-wrapper {
+        position: absolute;
+        bottom: 80px; /* Positioned above the bubble */
+        right: 0;
+        width: 100%;
+        pointer-events: auto; /* Make the window clickable */
+    }
+
+    .chat-window {
+        width: 100%;
+        height: 550px;
+        background: #f9f9f9;
+        border-radius: 20px;
+        display: flex;
+        flex-direction: column;
+        overflow: hidden;
+        border: 1px solid #eef0f2;
+        
+        transform: scale(0.8);
+        opacity: 0;
+        transform-origin: bottom right;
+        transition: transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275), opacity 0.2s ease-out;
+    }
+
+    .chat-window.open {
+        transform: scale(1);
+        opacity: 1;
+    }
+
+    .chat-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 15px 20px;
+        background: #ffffff;
+        border-bottom: 1px solid #eef0f2;
+        flex-shrink: 0;
+    }
+    
+    .header-content { display: flex; align-items: center; }
+    .bot-avatar-header {
+        width: 40px; height: 40px; border-radius: 50%;
+        background: #e4f8e9; color: #1a9c50;
+        display: flex; align-items: center; justify-content: center;
+        font-size: 20px; margin-right: 12px;
+    }
+    .bot-info { display: flex; flex-direction: column; }
+    .bot-name { font-weight: 600; color: #333; }
+    .bot-status { font-size: 0.8rem; color: #6c757d; }
+
+    .close-button {
+        background: none; border: none; font-size: 24px;
+        color: #adb5bd; cursor: pointer; transition: color 0.2s;
+    }
+    .close-button:hover { color: #333; }
+
+    .chat-messages {
+        flex-grow: 1;
+        overflow-y: auto;
+        display: flex;
+        flex-direction: column;
+        gap: 5px;
+        padding: 20px 15px !important;
+    }
+
+    .message-wrapper { display: flex; margin-bottom: 10px; }
+    .message-wrapper.user { justify-content: flex-end; }
+    .message-wrapper.bot { justify-content: flex-start; }
+
+    .message {
+        padding: 10px 18px;
+        border-radius: 20px;
+        font-size: 0.95rem;
+        word-wrap: break-word;
+        max-width: 80%;
+    }
+
+    .user-message {
+        background-color: #007bff; color: white;
+        border-bottom-right-radius: 5px;
+    }
+
+    .bot-message {
+        background-color: #ffffff; color: #343a40;
+        border: 1px solid #eef0f2;
+        border-bottom-left-radius: 5px;
+    }
+
+    .chat-input-footer {
+        padding: 15px 20px;
+        background: #ffffff;
+        border-top: 1px solid #eef0f2;
+    }
+
+    .input-form { position: relative; }
+
+    .chat-input-field {
+        width: 100%;
+        height: 50px;
+        border-radius: 25px;
+        border: 1px solid #eef0f2;
+        background: #f9f9f9;
+        padding: 0 60px 0 25px;
+        font-size: 1rem;
+        outline: none;
+        transition: border-color 0.2s;
+    }
+    .chat-input-field:focus { border-color: #007bff; }
+
+    .send-button {
+        position: absolute;
+        right: 7px;
+        top: 50%;
+        transform: translateY(-50%);
+        width: 36px; height: 36px;
+        border-radius: 50%;
+        background: #007bff;
+        color: white;
+        border: none;
+        cursor: pointer;
+        display: flex; align-items: center; justify-content: center;
+        font-size: 16px;
+        transition: background-color 0.2s;
+    }
+    .send-button:hover { background-color: #0056b3; }
+    .send-button:disabled { background-color: #cce5ff; cursor: not-allowed; }
+
+    .typing-indicator .dot {
+        /* ... (styles de l'indicateur de frappe inchangés) ... */
+    }
+</style>
+
+@code {
+    private bool isOpen = false;
+    private string newMessage = "";
+    private bool isLoading = false;
+    private List<ChatMessageDto> messages = new();
+    private string sessionId = Guid.NewGuid().ToString();
+    private ElementReference _messagesContainer;
+
+    private async Task ToggleChat()
+    {
+        isOpen = !isOpen;
+        if (isOpen && messages.Count == 0)
+        {
+            messages.Add(new ChatMessageDto(Guid.NewGuid(), sessionId, "Bot", "Bonjour ! Comment puis-je vous aider à trouver les meilleurs produits locaux ?", DateTime.UtcNow));
+        }
+        await Task.Delay(50);
+        await ScrollToBottom();
+    }
+
+    private async Task SendMessage()
+    {
+        if (string.IsNullOrWhiteSpace(newMessage)) return;
+
+        var userMsgText = newMessage;
+        newMessage = "";
+        
+        messages.Add(new ChatMessageDto(Guid.NewGuid(), sessionId, "Moi", userMsgText, DateTime.UtcNow));
+        isLoading = true;
+        await InvokeAsync(StateHasChanged);
+        await ScrollToBottom();
+
+        try
+        {
+            var response = await Http.PostAsJsonAsync("http://localhost:5210/api/chatbot", new ChatMessageDto(Guid.NewGuid(), sessionId, "User", userMsgText, DateTime.UtcNow));
+            if (response.IsSuccessStatusCode)
+            {
+                var botMessage = await response.Content.ReadFromJsonAsync<ChatMessageDto>();
+                if (botMessage != null) messages.Add(botMessage);
+            }
+            else
+            {
+                messages.Add(new ChatMessageDto(Guid.NewGuid(), sessionId, "Bot", "Désolé, une erreur est survenue.", DateTime.UtcNow));
+            }
+        }
+        catch (Exception)
+        {
+            messages.Add(new ChatMessageDto(Guid.NewGuid(), sessionId, "Bot", "Impossible de joindre le service de chatbot.", DateTime.UtcNow));
+        }
+        finally
+        {
+            isLoading = false;
+            await InvokeAsync(StateHasChanged);
+            await ScrollToBottom();
+        }
+    }
+
+    private async Task ScrollToBottom()
+    {
+        if (isOpen)
+        {
+            try {
+                await JSRuntime.InvokeVoidAsync("eval", $"document.querySelector('.chat-messages').scrollTop = document.querySelector('.chat-messages').scrollHeight");
+            } catch { /* Ignore JS interop errors if element is not ready */ }
+        }
+    }
+}

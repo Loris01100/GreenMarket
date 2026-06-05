@@ -2,6 +2,7 @@
 @page "/catalogue"
 @inject HttpClient Http
 @inject NavigationManager Navigation
+@using GreenMarket.Client.Shared
 
 <PageTitle>Catalogue - GreenMarket</PageTitle>
 
@@ -88,6 +89,8 @@ else
         }
     </div>
 }
+
+<ChatbotBubble />
 
 @code {
     private List<ProduitDto> _produits = new();
