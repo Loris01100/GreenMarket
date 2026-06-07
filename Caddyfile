@@ -1,0 +1,32 @@
+{
+    # HTTPS géré par Cloudflare (edge) ; le tunnel chiffre edge <-> serveur.
+    auto_https off
+}
+
+:80 {
+    @greenmarket host greenmarket.reesch.com
+    handle @greenmarket {
+        reverse_proxy client:80
+    }
+
+    @api host api.reesch.com
+    handle @api {
+        reverse_proxy api:8080 {
+            # Le TLS est terminé chez Cloudflare ; on indique le vrai schéma à l'origine.
+            header_up X-Forwarded-Proto https
+        }
+    }
+
+    @auth host auth.reesch.com
+    handle @auth {
+        reverse_proxy keycloak:8080 {
+            # Indispensable : sinon Keycloak se croit en HTTP et casse les cookies de session.
+            header_up X-Forwarded-Proto https
+        }
+    }
+
+    # Tout hôte non reconnu
+    handle {
+        respond "GreenMarket — hôte inconnu" 404
+    }
+}

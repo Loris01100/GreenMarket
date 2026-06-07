@@ -9,7 +9,8 @@ var builder = WebAssemblyHostBuilder.CreateDefault(args);
 builder.RootComponents.Add<App>("#app");
 builder.RootComponents.Add<HeadOutlet>("head::after");
 
-var apiBaseUrl = "http://localhost:5210";
+// URL de l'API : défaut dev, surchargé en prod via wwwroot/appsettings.Production.json.
+var apiBaseUrl = builder.Configuration["ApiBaseUrl"] ?? "http://localhost:5210";
 
 // Client authentifié : attache le jeton Keycloak (appels protégés — espace producteur, etc.).
 builder.Services.AddHttpClient("GreenMarket.Authorized", client =>

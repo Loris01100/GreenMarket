@@ -1,0 +1,86 @@
+# Surcharge de production. À utiliser AVEC le fichier de base :
+#   docker compose -f docker-compose.yml -f docker-compose.prod.yml --env-file .env.production up -d --build
+#
+# Requiert Docker Compose v2.24+ pour la balise `!reset` (fermeture des ports).
+
+services:
+  postgres:
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB}
+      # Lu par init-db/01-init-keycloak.sh pour créer le user/base keycloak
+      KEYCLOAK_DB_PASSWORD: ${KEYCLOAK_DB_PASSWORD}
+    # Crée la base/utilisateur keycloak_db au premier démarrage
+    volumes:
+      - ./init-db:/docker-entrypoint-initdb.d:ro
+    # Ne PAS exposer Postgres publiquement (annule le 5432:5432 du fichier de base)
+    ports: !reset []
+
+  keycloak:
+    restart: unless-stopped
+    # `start` (et non start-dev) ; pas de --optimized car l'image n'est pas pré-buildée
+    command: start --import-realm
+    environment:
+      KC_DB: postgres
+      KC_DB_URL: jdbc:postgresql://postgres:5432/keycloak_db
+      KC_DB_USERNAME: keycloak
+      KC_DB_PASSWORD: ${KEYCLOAK_DB_PASSWORD}
+      KC_HOSTNAME: ${PUBLIC_KEYCLOAK_URL}
+      KC_HTTP_ENABLED: "true"
+      KC_PROXY_HEADERS: xforwarded
+      KC_BOOTSTRAP_ADMIN_USERNAME: ${KEYCLOAK_ADMIN}
+      KC_BOOTSTRAP_ADMIN_PASSWORD: ${KEYCLOAK_ADMIN_PASSWORD}
+    ports: !reset []
+
+  api:
+    build:
+      context: ./GreenMarket
+      dockerfile: GreenMarket.API/Dockerfile
+    container_name: greenmarket-api
+    restart: unless-stopped
+    environment:
+      ASPNETCORE_ENVIRONMENT: Production
+      ConnectionStrings__DefaultConnection: "Host=postgres;Port=5432;Database=${POSTGRES_DB};Username=${POSTGRES_USER};Password=${POSTGRES_PASSWORD}"
+      Keycloak__Authority: ${PUBLIC_KEYCLOAK_URL}/realms/greenmarket
+      Keycloak__BaseUrl: ${PUBLIC_KEYCLOAK_URL}
+      Keycloak__Realm: greenmarket
+      Keycloak__ClientId: greenmarket-api
+      Cors__AllowedOrigins__0: ${PUBLIC_CLIENT_URL}
+      Stripe__SecretKey: ${STRIPE_SECRET_KEY}
+      Stripe__PublishableKey: ${STRIPE_PUBLISHABLE_KEY}
+      Stripe__WebhookSecret: ${STRIPE_WEBHOOK_SECRET}
+    depends_on:
+      postgres:
+        condition: service_healthy
+      keycloak:
+        condition: service_started
+
+  client:
+    build:
+      context: ./GreenMarket
+      dockerfile: GreenMarket.Client/Dockerfile
+    container_name: greenmarket-client
+    restart: unless-stopped
+    depends_on:
+      - api
+
+  caddy:
+    image: caddy:2-alpine
+    container_name: greenmarket-caddy
+    restart: unless-stopped
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+    depends_on:
+      - api
+      - client
+      - keycloak
+
+  cloudflared:
+    image: cloudflare/cloudflared:latest
+    container_name: greenmarket-cloudflared
+    restart: unless-stopped
+    command: tunnel --no-autoupdate run --token ${CLOUDFLARE_TUNNEL_TOKEN}
+    depends_on:
+      - caddy

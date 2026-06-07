@@ -58,7 +58,7 @@ nunit-*.xml
 
 # Production
 .env
-.env/production
+.env.production
 
 **/appsettings.Development.json
 **/appsettings.Local.json
