@@ -926,7 +926,26 @@
             ],
             "attributes": {
                 "pkce.code.challenge.method": "S256"
-            }
+            },
+            "protocolMappers": [
+                {
+                    "name": "realm-roles-to-roles-claim",
+                    "protocol": "openid-connect",
+                    "protocolMapper": "oidc-usermodel-realm-role-mapper",
+                    "consentRequired": false,
+                    "config": {
+                        "introspection.token.claim": "true",
+                        "multivalued": "true",
+                        "user.attribute": "foo",
+                        "id.token.claim": "true",
+                        "access.token.claim": "true",
+                        "claim.name": "roles",
+                        "jsonType.label": "String",
+                        "usermodel.realmRoleMapping.rolePrefix": "",
+                        "userinfo.token.claim": "true"
+                    }
+                }
+            ]
         }
     ],
     "clientScopes": [
