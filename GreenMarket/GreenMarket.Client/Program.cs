@@ -42,7 +42,8 @@ builder.Services.AddOidcAuthentication(options =>
     builder.Configuration.Bind("Keycloak", options.ProviderOptions);
     options.ProviderOptions.ResponseType = "code";
     options.UserOptions.RoleClaim = "roles";
-});
+})
+.AddAccountClaimsPrincipalFactory<KeycloakRolesClaimsFactory>();
 
 builder.Services.AddFluentUIComponents();
 
