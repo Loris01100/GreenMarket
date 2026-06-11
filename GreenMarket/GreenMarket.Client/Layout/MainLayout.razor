@@ -14,6 +14,11 @@
 
         <nav class="topnav">
             <NavLink class="topnav-link" href="/catalogue" Match="NavLinkMatch.All">Catalogue</NavLink>
+            <AuthorizeView Context="commandesNav">
+                <Authorized>
+                    <NavLink class="topnav-link" href="/mes-commandes">Mes commandes</NavLink>
+                </Authorized>
+            </AuthorizeView>
             <AuthorizeView Roles="Producteur,Admin" Context="prodNav">
                 <Authorized>
                     <NavLink class="topnav-link" href="/producteur">Espace Producteur</NavLink>

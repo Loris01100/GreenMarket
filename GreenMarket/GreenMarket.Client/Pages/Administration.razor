@@ -1,0 +1,144 @@
+@page "/administration"
+@inject HttpClient Http
+
+<PageTitle>Administration - GreenMarket</PageTitle>
+
+<div class="page-header">
+    <div class="page-header-row">
+        <span class="page-header-icon">
+            <FluentIcon Value="@(new Icons.Regular.Size24.Settings())" Color="@Color.Custom" CustomColor="white" />
+        </span>
+        <div>
+            <h1 class="page-title" style="margin:0;">Administration</h1>
+            <p class="page-subtitle" style="margin:0;">Vue d'ensemble du catalogue GreenMarket</p>
+        </div>
+    </div>
+</div>
+
+<AuthorizeView Roles="Admin">
+    <Authorized>
+        @if (_loading)
+        {
+            <div class="loading-container">
+                <FluentProgressRing />
+                <span class="loading-text">Chargement des données...</span>
+            </div>
+        }
+        else if (_erreur is not null)
+        {
+            <FluentMessageBar Intent="MessageIntent.Error">@_erreur</FluentMessageBar>
+        }
+        else
+        {
+            <div class="stat-grid">
+                <div class="stat-tile">
+                    <div class="stat-tile-head">
+                        <FluentIcon Value="@(new Icons.Regular.Size20.Box())" Color="@Color.Custom" CustomColor="#3a9d5d" />
+                        Produits actifs
+                    </div>
+                    <div class="stat-tile-value">@_produits.Count</div>
+                    <div class="stat-tile-sub">au catalogue</div>
+                </div>
+                <div class="stat-tile">
+                    <div class="stat-tile-head">
+                        <FluentIcon Value="@(new Icons.Regular.Size20.Tag())" Color="@Color.Custom" CustomColor="#3a9d5d" />
+                        Catégories
+                    </div>
+                    <div class="stat-tile-value">@_nbCategories</div>
+                    <div class="stat-tile-sub">disponibles</div>
+                </div>
+                <div class="stat-tile orange">
+                    <div class="stat-tile-head">
+                        <FluentIcon Value="@(new Icons.Regular.Size20.Warning())" Color="@Color.Custom" CustomColor="#d98324" />
+                        En rupture
+                    </div>
+                    <div class="stat-tile-value">@_enRupture</div>
+                    <div class="stat-tile-sub">stock épuisé</div>
+                </div>
+                <div class="stat-tile">
+                    <div class="stat-tile-head">
+                        <FluentIcon Value="@(new Icons.Regular.Size20.Money())" Color="@Color.Custom" CustomColor="#3a9d5d" />
+                        Valeur du stock
+                    </div>
+                    <div class="stat-tile-value">@_valeurStock.ToString("0.00")€</div>
+                    <div class="stat-tile-sub">prix × quantité</div>
+                </div>
+            </div>
+
+            <div class="section-head">
+                <h2>Catalogue</h2>
+            </div>
+
+            <table class="gm-table">
+                <thead>
+                    <tr>
+                        <th>Produit</th>
+                        <th>Producteur</th>
+                        <th>Catégorie</th>
+                        <th>Prix</th>
+                        <th>Stock</th>
+                        <th>Score env.</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var p in _produits)
+                    {
+                        <tr>
+                            <td>@p.Nom</td>
+                            <td>@p.NomProducteur</td>
+                            <td>@p.CategorieLibelle</td>
+                            <td>@p.PrixUnitaire.ToString("0.00")€</td>
+                            <td>
+                                @if (p.StockDisponible is > 0)
+                                {
+                                    <span>@p.StockDisponible</span>
+                                }
+                                else
+                                {
+                                    <span class="status-badge status-echec">Rupture</span>
+                                }
+                            </td>
+                            <td>@(p.ScoreEnvironnemental is int s ? $"{s}%" : "—")</td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        }
+    </Authorized>
+    <NotAuthorized>
+        <FluentMessageBar Intent="MessageIntent.Warning">
+            Accès réservé aux administrateurs.
+        </FluentMessageBar>
+    </NotAuthorized>
+</AuthorizeView>
+
+@code {
+    private bool _loading = true;
+    private string? _erreur;
+
+    private List<ProduitDto> _produits = new();
+    private int _nbCategories;
+    private int _enRupture;
+    private decimal _valeurStock;
+
+    protected override async Task OnInitializedAsync()
+    {
+        try
+        {
+            _produits = await Http.GetFromJsonAsync<List<ProduitDto>>("api/produits") ?? new();
+            var categories = await Http.GetFromJsonAsync<List<CategorieDto>>("api/categories") ?? new();
+
+            _nbCategories = categories.Count;
+            _enRupture    = _produits.Count(p => (p.StockDisponible ?? 0) == 0);
+            _valeurStock  = _produits.Sum(p => p.PrixUnitaire * (p.StockDisponible ?? 0));
+        }
+        catch (Exception ex)
+        {
+            _erreur = $"Impossible de charger les données : {ex.Message}";
+        }
+        finally
+        {
+            _loading = false;
+        }
+    }
+}

@@ -5,6 +5,7 @@ using GreenMarket.Application.Interfaces;
 using GreenMarket.Application.UseCases.Producteurs;
 using GreenMarket.Application.UseCases.Commandes;
 using GreenMarket.API.Controllers;
+using GreenMarket.API.Data;
 using GreenMarket.API.Endpoints;
 using GreenMarket.API.Services;
 using GreenMarket.Domain.Interfaces;
@@ -130,6 +131,16 @@ if (!app.Environment.IsDevelopment())
     using var scope = app.Services.CreateScope();
     var db = scope.ServiceProvider.GetRequiredService<GreenMarketDbContext>();
     db.Database.Migrate();
+}
+
+// Jeu de données de test (producteur + produits) pour tester le tunnel de commande.
+// Actif en Development ; activable ailleurs via la config "SeedTestData": true.
+if (app.Environment.IsDevelopment() || app.Configuration.GetValue<bool>("SeedTestData"))
+{
+    using var scope = app.Services.CreateScope();
+    var db = scope.ServiceProvider.GetRequiredService<GreenMarketDbContext>();
+    var logger = scope.ServiceProvider.GetRequiredService<ILogger<Program>>();
+    await DbSeeder.SeedTestDataAsync(db, logger);
 }
 
 if (app.Environment.IsDevelopment())
