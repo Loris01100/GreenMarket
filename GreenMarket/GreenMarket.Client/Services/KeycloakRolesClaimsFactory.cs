@@ -54,7 +54,9 @@ public class KeycloakRolesClaimsFactory : AccountClaimsPrincipalFactory<RemoteUs
         ClaimsIdentity identity,
         string accessKey)
     {
-        if (!account.AdditionalProperties.TryGetValue(accessKey, out var value) || value is null)
+        if (account.AdditionalProperties is null ||
+            !account.AdditionalProperties.TryGetValue(accessKey, out var value) ||
+            value is null)
             return;
 
         try
