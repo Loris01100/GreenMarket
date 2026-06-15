@@ -1,0 +1,192 @@
+@page "/"
+@inject HttpClient Http
+@inject NavigationManager Navigation
+
+<PageTitle>GreenMarket — Produits locaux & écoresponsables</PageTitle>
+
+@* ==================== HERO ==================== *@
+<section class="home-hero">
+    <div class="home-hero-content">
+        <span class="home-hero-eyebrow">
+            <FluentIcon Value="@(new Icons.Filled.Size24.PlantGrass())" Color="@Color.Custom" CustomColor="#3a9d5d" />
+            Circuits courts &amp; producteurs locaux
+        </span>
+        <h1 class="home-hero-title">Consommez <span>local</span>, mangez <span>responsable</span></h1>
+        <p class="home-hero-text">
+            GreenMarket met en relation les producteurs de votre région et les consommateurs
+            soucieux de la traçabilité et de l'impact environnemental de leurs achats.
+        </p>
+        <div class="home-hero-actions">
+            <button class="btn-primary" @onclick="@(() => Navigation.NavigateTo("/catalogue"))">
+                <FluentIcon Value="@(new Icons.Regular.Size20.BuildingShop())" Color="@Color.Custom" CustomColor="white" />
+                Explorer le catalogue
+            </button>
+            <AuthorizeView>
+                <NotAuthorized>
+                    <button class="btn-ghost" @onclick="BeginLogin">
+                        <FluentIcon Value="@(new Icons.Regular.Size20.Person())" Color="@Color.Custom" CustomColor="#2e7d32" />
+                        Se connecter
+                    </button>
+                </NotAuthorized>
+                <Authorized>
+                    <button class="btn-ghost" @onclick="@(() => Navigation.NavigateTo("/panier"))">
+                        <FluentIcon Value="@(new Icons.Regular.Size20.Cart())" Color="@Color.Custom" CustomColor="#2e7d32" />
+                        Mon panier
+                    </button>
+                </Authorized>
+            </AuthorizeView>
+        </div>
+    </div>
+</section>
+
+@* ==================== POINTS FORTS ==================== *@
+<section class="home-section">
+    <div class="feature-grid">
+        <div class="feature-card">
+            <div class="feature-icon green">
+                <FluentIcon Value="@(new Icons.Regular.Size24.VehicleTruckProfile())" Color="@Color.Custom" CustomColor="#2e7d32" />
+            </div>
+            <h3>Circuits courts</h3>
+            <p>Des produits frais issus de producteurs proches de chez vous, pour réduire l'empreinte carbone du transport.</p>
+        </div>
+        <div class="feature-card">
+            <div class="feature-icon green">
+                <FluentIcon Value="@(new Icons.Regular.Size24.DocumentSearch())" Color="@Color.Custom" CustomColor="#2e7d32" />
+            </div>
+            <h3>Traçabilité</h3>
+            <p>Chaque produit affiche son origine et son parcours, pour une transparence totale sur ce que vous achetez.</p>
+        </div>
+        <div class="feature-card">
+            <div class="feature-icon green">
+                <FluentIcon Value="@(new Icons.Regular.Size24.LeafThree())" Color="@Color.Custom" CustomColor="#2e7d32" />
+            </div>
+            <h3>Score environnemental</h3>
+            <p>Un indicateur clair d'impact écologique vous aide à privilégier les produits les plus responsables.</p>
+        </div>
+    </div>
+</section>
+
+@* ==================== ACCÈS RAPIDE (navigation par rôle) ==================== *@
+<section class="home-section">
+    <h2 class="home-section-title">Accès rapide</h2>
+    <p class="home-section-sub">Retrouvez en un clic les espaces de la plateforme.</p>
+
+    <div class="nav-grid">
+        <a class="nav-tile" href="/catalogue">
+            <FluentIcon Value="@(new Icons.Regular.Size24.BuildingShop())" Color="@Color.Custom" CustomColor="#2e7d32" />
+            <span class="nav-tile-title">Catalogue</span>
+            <span class="nav-tile-sub">Parcourir tous les produits</span>
+        </a>
+
+        <a class="nav-tile" href="/panier">
+            <FluentIcon Value="@(new Icons.Regular.Size24.Cart())" Color="@Color.Custom" CustomColor="#2e7d32" />
+            <span class="nav-tile-title">Mon panier</span>
+            <span class="nav-tile-sub">Vos produits sélectionnés</span>
+        </a>
+
+        <AuthorizeView>
+            <Authorized Context="cmd">
+                <a class="nav-tile" href="/mes-commandes">
+                    <FluentIcon Value="@(new Icons.Regular.Size24.ReceiptMoney())" Color="@Color.Custom" CustomColor="#2e7d32" />
+                    <span class="nav-tile-title">Mes commandes</span>
+                    <span class="nav-tile-sub">Historique de vos achats</span>
+                </a>
+            </Authorized>
+        </AuthorizeView>
+
+        <AuthorizeView Roles="Producteur,Admin" Context="prod">
+            <Authorized>
+                <a class="nav-tile" href="/producteur">
+                    <FluentIcon Value="@(new Icons.Regular.Size24.PlantGrass())" Color="@Color.Custom" CustomColor="#2e7d32" />
+                    <span class="nav-tile-title">Espace Producteur</span>
+                    <span class="nav-tile-sub">Gérer produits, stocks &amp; ventes</span>
+                </a>
+            </Authorized>
+        </AuthorizeView>
+
+        <AuthorizeView Roles="Admin" Context="adm">
+            <Authorized>
+                <a class="nav-tile" href="/administration">
+                    <FluentIcon Value="@(new Icons.Regular.Size24.Shield())" Color="@Color.Custom" CustomColor="#2e7d32" />
+                    <span class="nav-tile-title">Administration</span>
+                    <span class="nav-tile-sub">Supervision de la plateforme</span>
+                </a>
+            </Authorized>
+        </AuthorizeView>
+
+        <AuthorizeView>
+            <NotAuthorized Context="anon">
+                <button class="nav-tile nav-tile-btn" @onclick="BeginLogin">
+                    <FluentIcon Value="@(new Icons.Regular.Size24.Person())" Color="@Color.Custom" CustomColor="#2e7d32" />
+                    <span class="nav-tile-title">Se connecter</span>
+                    <span class="nav-tile-sub">Commander &amp; suivre vos achats</span>
+                </button>
+            </NotAuthorized>
+        </AuthorizeView>
+    </div>
+</section>
+
+@* ==================== PRODUITS À LA UNE ==================== *@
+@if (_aLaUne.Count > 0)
+{
+    <section class="home-section">
+        <div class="home-section-head">
+            <div>
+                <h2 class="home-section-title">Produits à la une</h2>
+                <p class="home-section-sub">Un aperçu de notre sélection du moment.</p>
+            </div>
+            <a class="home-link" href="/catalogue">
+                Tout voir
+                <FluentIcon Value="@(new Icons.Regular.Size16.ArrowRight())" Color="@Color.Custom" CustomColor="#2e7d32" />
+            </a>
+        </div>
+
+        <div class="product-grid">
+            @foreach (var p in _aLaUne)
+            {
+                <div class="product-card" @onclick="@(() => Navigation.NavigateTo($"/produit/{p.ProduitId}"))">
+                    <div class="product-thumb">
+                        <FluentIcon Value="@(new Icons.Regular.Size32.LeafOne())" Color="@Color.Custom" CustomColor="#8cc79f" />
+                    </div>
+                    <div class="product-body">
+                        <p class="product-name">@p.Nom</p>
+                        <p class="product-producer">@p.NomProducteur</p>
+                        <div class="product-meta">
+                            <span class="product-price">@p.PrixUnitaire.ToString("0.00")€</span>
+                            @if (p.ScoreEnvironnemental is int score)
+                            {
+                                <span class="eco-badge">
+                                    <FluentIcon Value="@(new Icons.Regular.Size16.LeafOne())" Color="@Color.Custom" CustomColor="#3a9d5d" />
+                                    @score%
+                                </span>
+                            }
+                        </div>
+                    </div>
+                </div>
+            }
+        </div>
+    </section>
+}
+
+@code {
+    private List<ProduitDto> _aLaUne = new();
+
+    protected override async Task OnInitializedAsync()
+    {
+        // Aperçu best-effort : la page d'accueil reste affichée même si l'API est indisponible.
+        try
+        {
+            var produits = await Http.GetFromJsonAsync<List<ProduitDto>>("api/produits");
+            _aLaUne = (produits ?? new())
+                .OrderByDescending(p => p.ScoreEnvironnemental ?? 0)
+                .Take(4)
+                .ToList();
+        }
+        catch
+        {
+            _aLaUne = new();
+        }
+    }
+
+    private void BeginLogin() => Navigation.NavigateToLogin("authentication/login");
+}
