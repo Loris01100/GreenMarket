@@ -42,6 +42,8 @@ services:
     restart: unless-stopped
     environment:
       ASPNETCORE_ENVIRONMENT: Production
+      # Seede un producteur + des produits de test au démarrage (idempotent). Mettre à "false" pour désactiver.
+      SeedTestData: "true"
       ConnectionStrings__DefaultConnection: "Host=postgres;Port=5432;Database=${POSTGRES_DB};Username=${POSTGRES_USER};Password=${POSTGRES_PASSWORD}"
       Keycloak__Authority: ${PUBLIC_KEYCLOAK_URL}/realms/greenmarket
       Keycloak__BaseUrl: ${PUBLIC_KEYCLOAK_URL}

@@ -1,0 +1,147 @@
+@page "/mes-commandes"
+@inject IHttpClientFactory HttpClientFactory
+
+<PageTitle>Mes commandes - GreenMarket</PageTitle>
+
+<div class="page-header">
+    <div class="page-header-row">
+        <span class="page-header-icon">
+            <FluentIcon Value="@(new Icons.Regular.Size24.ReceiptMoney())" Color="@Color.Custom" CustomColor="white" />
+        </span>
+        <div>
+            <h1 class="page-title" style="margin:0;">Mes commandes</h1>
+            <p class="page-subtitle" style="margin:0;">Historique et suivi de vos paiements</p>
+        </div>
+    </div>
+</div>
+
+<AuthorizeView>
+    <Authorized>
+        @if (_loading)
+        {
+            <div class="loading-container">
+                <FluentProgressRing />
+                <span class="loading-text">Chargement de vos commandes...</span>
+            </div>
+        }
+        else if (_erreur is not null)
+        {
+            <FluentMessageBar Intent="MessageIntent.Error">@_erreur</FluentMessageBar>
+        }
+        else if (_commandes.Count == 0)
+        {
+            <div class="empty-state">
+                <div class="empty-icon">
+                    <FluentIcon Value="@(new Icons.Regular.Size24.ReceiptMoney())" Color="@Color.Custom" CustomColor="#3a9d5d" />
+                </div>
+                <p>Vous n'avez pas encore passé de commande.</p>
+                <a class="btn-primary" href="/catalogue" style="margin-top:12px;">Parcourir le catalogue</a>
+            </div>
+        }
+        else
+        {
+            @foreach (var commande in _commandes)
+            {
+                <div class="panel" style="margin-bottom:18px;">
+                    <div style="display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:12px;">
+                        <div>
+                            <h3 style="margin:0; color:var(--gm-green-strong);">Commande n°@commande.CommandeId</h3>
+                            <p style="margin:2px 0 0; color:#777; font-size:0.85rem;">
+                                @commande.DateCommande.ToLocalTime().ToString("dd/MM/yyyy à HH:mm")
+                            </p>
+                        </div>
+                        <div style="text-align:right;">
+                            <span class="status-badge @StatutClasse(commande.StatutPaiement)">@StatutLibelle(commande.StatutPaiement)</span>
+                            <div style="font-size:1.2rem; font-weight:800; margin-top:6px;">@commande.MontantTotal.ToString("0.00")€</div>
+                        </div>
+                    </div>
+
+                    <div style="margin-top:16px; border-top:1px solid var(--gm-border); padding-top:12px;">
+                        @foreach (var ligne in commande.Lignes)
+                        {
+                            <div class="summary-row">
+                                <span>@ligne.Quantite&times; Produit #@ligne.ProduitId</span>
+                                <span>@ligne.SousTotal.ToString("0.00")€</span>
+                            </div>
+                        }
+                    </div>
+                </div>
+            }
+        }
+    </Authorized>
+    <NotAuthorized>
+        <RedirectToLogin />
+    </NotAuthorized>
+</AuthorizeView>
+
+@code {
+    [CascadingParameter]
+    private Task<AuthenticationState>? AuthStateTask { get; set; }
+
+    private bool _loading = true;
+    private string? _erreur;
+    private List<CommandeVue> _commandes = new();
+
+    protected override async Task OnInitializedAsync()
+    {
+        // Ne charge les commandes que si l'utilisateur est authentifié
+        // (sinon le composant NotAuthorized redirige vers la connexion).
+        if (AuthStateTask is not null)
+        {
+            var state = await AuthStateTask;
+            if (state.User.Identity?.IsAuthenticated != true)
+            {
+                _loading = false;
+                return;
+            }
+        }
+
+        try
+        {
+            var http = HttpClientFactory.CreateClient("GreenMarket.Authorized");
+            _commandes = await http.GetFromJsonAsync<List<CommandeVue>>("api/commandes/mes-commandes") ?? new();
+        }
+        catch (Exception ex)
+        {
+            _erreur = $"Impossible de charger vos commandes : {ex.Message}";
+        }
+        finally
+        {
+            _loading = false;
+        }
+    }
+
+    private static string StatutClasse(string statut) => statut switch
+    {
+        "paye"      => "status-paye",
+        "en_attente" => "status-attente",
+        "rembourse" => "status-prep",
+        _           => "status-echec"
+    };
+
+    private static string StatutLibelle(string statut) => statut switch
+    {
+        "paye"       => "Payée",
+        "en_attente" => "En attente",
+        "refuse"     => "Refusée",
+        "rembourse"  => "Remboursée",
+        "annule"     => "Annulée",
+        _            => statut
+    };
+
+    // Forme JSON renvoyée par CommandeDto (couche Application, non partagée avec le Client).
+    private record CommandeVue(
+        int CommandeId,
+        Guid UtilisateurId,
+        DateTimeOffset DateCommande,
+        decimal MontantTotal,
+        string StatutPaiement,
+        List<LigneVue> Lignes);
+
+    private record LigneVue(
+        int ProduitId,
+        int ProducteurId,
+        int Quantite,
+        decimal PrixUnitaire,
+        decimal SousTotal);
+}

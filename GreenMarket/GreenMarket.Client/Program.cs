@@ -19,11 +19,11 @@ builder.Services.AddHttpClient("GreenMarket.Authorized", client =>
     })
     .AddHttpMessageHandler(sp =>
     {
+        // Pas de scopes explicites : on attache le token déjà acquis à la connexion.
+        // Forcer des scopes déclencherait une demande silencieuse (iframe vers Keycloak),
+        // qui casse en prod à cause du blocage des cookies tiers (sous-domaines distincts).
         var handler = sp.GetRequiredService<AuthorizationMessageHandler>()
-            .ConfigureHandler(
-                authorizedUrls: [apiBaseUrl],
-                scopes: ["openid", "profile"]
-            );
+            .ConfigureHandler(authorizedUrls: [apiBaseUrl]);
         return handler;
     });
 
