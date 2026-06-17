@@ -32,6 +32,10 @@ services:
       KC_PROXY_HEADERS: xforwarded
       KC_BOOTSTRAP_ADMIN_USERNAME: ${KEYCLOAK_ADMIN}
       KC_BOOTSTRAP_ADMIN_PASSWORD: ${KEYCLOAK_ADMIN_PASSWORD}
+    volumes:
+      - ./keycloak:/opt/keycloak/data/import:ro
+      # Thème de login personnalisé GreenMarket (activé via loginTheme du realm)
+      - ./keycloak-themes:/opt/keycloak/themes:ro
     ports: !reset []
 
   api:

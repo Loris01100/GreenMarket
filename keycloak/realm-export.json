@@ -1,6 +1,7 @@
 {
     "id": "cec28ca2-f303-4f7d-a9d0-13503e0151e9",
     "realm": "greenmarket",
+    "loginTheme": "greenmarket",
     "notBefore": 0,
     "defaultSignatureAlgorithm": "RS256",
     "revokeRefreshToken": false,

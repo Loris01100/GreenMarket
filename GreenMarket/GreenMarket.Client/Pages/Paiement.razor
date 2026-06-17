@@ -134,9 +134,16 @@
             _stripeReady = true;
             StateHasChanged();
         }
+        catch (AccessTokenNotAvailableException ex)
+        {
+            // Token expiré / renouvellement silencieux échoué : on renvoie vers la
+            // connexion plutôt que d'afficher une erreur au message vide.
+            ex.Redirect();
+        }
         catch (Exception ex)
         {
-            _erreur = $"Erreur d'initialisation : {ex.Message}";
+            var detail = string.IsNullOrWhiteSpace(ex.Message) ? ex.GetType().Name : ex.Message;
+            _erreur = $"Erreur d'initialisation : {detail}";
             StateHasChanged();
         }
     }
