@@ -60,7 +60,7 @@
                         @foreach (var ligne in commande.Lignes)
                         {
                             <div class="summary-row">
-                                <span>@ligne.Quantite&times; Produit #@ligne.ProduitId</span>
+                                <span>@ligne.Quantite&times; @ligne.NomProduit</span>
                                 <span>@ligne.SousTotal.ToString("0.00")€</span>
                             </div>
                         }
@@ -141,6 +141,7 @@
     private record LigneVue(
         int ProduitId,
         int ProducteurId,
+        string  NomProduit,
         int Quantite,
         decimal PrixUnitaire,
         decimal SousTotal);
