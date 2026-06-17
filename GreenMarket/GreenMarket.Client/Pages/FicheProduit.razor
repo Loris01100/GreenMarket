@@ -25,7 +25,14 @@ else
 {
     <div class="detail-grid">
         <div class="detail-image">
-            <FluentIcon Value="@(new Icons.Regular.Size32.LeafOne())" Color="@Color.Custom" CustomColor="#8cc79f" />
+            @if (!string.IsNullOrWhiteSpace(_produit.ImageUrl))
+            {
+                <img src="@_produit.ImageUrl" alt="@_produit.Nom" style="width:100%; height:100%; object-fit:cover;" />
+            }
+            else
+            {
+                <FluentIcon Value="@(new Icons.Regular.Size32.LeafOne())" Color="@Color.Custom" CustomColor="#8cc79f" />
+            }
         </div>
 
         <div>

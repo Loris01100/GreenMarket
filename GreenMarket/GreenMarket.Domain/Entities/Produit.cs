@@ -24,6 +24,9 @@ public class Produit
 
     public string? Description { get; set; }
 
+    [MaxLength(2048)]
+    public string? ImageUrl { get; set; }
+
     [Column(TypeName = "numeric(10,2)")]
     public decimal PrixUnitaire { get; set; }
 

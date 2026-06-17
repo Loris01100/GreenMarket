@@ -40,6 +40,7 @@ public class CreateProduitCommandHandler : IRequestHandler<CreateProduitCommand,
         {
             Nom = dto.Nom.Trim(),
             Description = dto.Description,
+            ImageUrl = dto.ImageUrl,
             PrixUnitaire = dto.PrixUnitaire,
             ProducteurId = producteur.ProducteurId,
             CategorieId = dto.CategorieId,

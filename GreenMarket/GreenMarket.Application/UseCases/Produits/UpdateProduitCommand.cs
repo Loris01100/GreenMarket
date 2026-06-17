@@ -38,6 +38,7 @@ public class UpdateProduitCommandHandler : IRequestHandler<UpdateProduitCommand,
         var dto = request.Dto;
         produit.Nom = dto.Nom.Trim();
         produit.Description = dto.Description;
+        produit.ImageUrl = dto.ImageUrl;
         produit.PrixUnitaire = dto.PrixUnitaire;
         produit.CategorieId = dto.CategorieId;
         produit.ScoreEnvironnemental = dto.ScoreEnvironnemental;

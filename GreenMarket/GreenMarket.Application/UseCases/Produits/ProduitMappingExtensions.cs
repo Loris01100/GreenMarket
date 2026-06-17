@@ -10,6 +10,7 @@ public static class ProduitMappingExtensions
         p.ProduitId,
         p.Nom,
         p.Description,
+        p.ImageUrl,
         p.PrixUnitaire,
         p.EstActif,
         p.ProducteurId,

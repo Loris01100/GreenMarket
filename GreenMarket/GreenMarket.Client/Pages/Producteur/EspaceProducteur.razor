@@ -283,6 +283,14 @@
                         <FluentLabel>Traçabilité</FluentLabel>
                         <FluentTextField @bind-Value="_form.Tracabilite" Placeholder="Ex: Cultivé à 13km, récolté ce matin" Style="width:100%;" />
                     </div>
+                    <div>
+                        <FluentLabel>Image (URL)</FluentLabel>
+                        <FluentTextField @bind-Value="_form.ImageUrl" Placeholder="https://exemple.com/photo.jpg" Style="width:100%;" />
+                        @if (!string.IsNullOrWhiteSpace(_form.ImageUrl))
+                        {
+                            <img src="@_form.ImageUrl" alt="Aperçu" style="margin-top:8px; max-height:120px; border-radius:8px; object-fit:cover;" />
+                        }
+                    </div>
 
                     <FluentStack Orientation="Orientation.Horizontal" HorizontalGap="12">
                         <button type="submit" class="btn-primary" disabled="@_envoi">
@@ -407,6 +415,7 @@
         _form.CategorieValue = p.CategorieId.ToString();
         _form.ScoreEnvironnemental = p.ScoreEnvironnemental;
         _form.Tracabilite = p.Tracabilite;
+        _form.ImageUrl = p.ImageUrl;
         _form.Quantite = p.StockDisponible ?? 0;
         _formErreur = null;
         _formOuvert = true;
@@ -436,6 +445,7 @@
                 CategorieId: catId,
                 ScoreEnvironnemental: _form.ScoreEnvironnemental,
                 Tracabilite: _form.Tracabilite,
+                ImageUrl: string.IsNullOrWhiteSpace(_form.ImageUrl) ? null : _form.ImageUrl.Trim(),
                 QuantiteInitiale: _form.Quantite,
                 SeuilAlerte: 5);
 
@@ -502,13 +512,14 @@
         public string CategorieValue { get; set; } = "0";
         public int? ScoreEnvironnemental { get; set; }
         public string? Tracabilite { get; set; }
+        public string? ImageUrl { get; set; }
         public int Quantite { get; set; }
 
         public void Reset(int? categorieParDefaut)
         {
             Nom = null; Description = null; PrixUnitaire = 0;
             CategorieValue = (categorieParDefaut ?? 0).ToString();
-            ScoreEnvironnemental = null; Tracabilite = null; Quantite = 0;
+            ScoreEnvironnemental = null; Tracabilite = null; ImageUrl = null; Quantite = 0;
         }
     }
 }

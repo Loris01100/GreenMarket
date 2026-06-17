@@ -26,6 +26,9 @@ public record ProduitCreateDto(
 
     string? Tracabilite = null,
 
+    [StringLength(2048, ErrorMessage = "L'URL de l'image ne peut pas dépasser 2048 caractères.")]
+    string? ImageUrl = null,
+
     [Range(0, int.MaxValue, ErrorMessage = "La quantité initiale doit être positive.")]
     int QuantiteInitiale = 0,
 

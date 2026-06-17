@@ -71,6 +71,7 @@ public class GreenMarketDbContext(DbContextOptions<GreenMarketDbContext> options
             entity.Property(p => p.CategorieId).HasColumnName("categorie_id");
             entity.Property(p => p.Nom).HasColumnName("nom").HasMaxLength(200);
             entity.Property(p => p.Description).HasColumnName("description");
+            entity.Property(p => p.ImageUrl).HasColumnName("image_url").HasMaxLength(2048);
             entity.Property(p => p.PrixUnitaire).HasColumnName("prix_unitaire").HasColumnType("numeric(10,2)");
             entity.Property(p => p.ScoreEnvironnemental).HasColumnName("score_environnemental");
             entity.Property(p => p.Tracabilite).HasColumnName("tracabilite");
