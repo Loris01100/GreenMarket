@@ -146,7 +146,14 @@
             {
                 <div class="product-card" @onclick="@(() => Navigation.NavigateTo($"/produit/{p.ProduitId}"))">
                     <div class="product-thumb">
-                        <FluentIcon Value="@(new Icons.Regular.Size32.LeafOne())" Color="@Color.Custom" CustomColor="#8cc79f" />
+                        @if (!string.IsNullOrWhiteSpace(p.ImageUrl))
+                        {
+                            <img src="@p.ImageUrl" alt="@p.Nom" style="width:100%; height:100%; object-fit:cover;" />
+                        }
+                        else
+                        {
+                            <FluentIcon Value="@(new Icons.Regular.Size32.LeafOne())" Color="@Color.Custom" CustomColor="#8cc79f" />
+                        }
                     </div>
                     <div class="product-body">
                         <p class="product-name">@p.Nom</p>
