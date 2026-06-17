@@ -28,6 +28,10 @@ public class StockRepository : IStockRepository
             .FirstOrDefaultAsync(s => s.StockId == id);
     }
 
+    public async Task<Stock?> GetByProduitIdAsync(int produitId)
+        => await _context.Stocks
+            .FirstOrDefaultAsync(s => s.ProduitId == produitId);
+
     public async Task AddAsync(Stock stock)
     {
         await _context.Stocks.AddAsync(stock);

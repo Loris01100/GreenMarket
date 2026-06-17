@@ -22,10 +22,13 @@ public class CommandeRepository : ICommandeRepository
 
     public async Task<IEnumerable<Commande>> GetByUtilisateurIdAsync(Guid utilisateurId)
         => await _context.Commandes
-                         .Include(c => c.LignesCommande)
-                         .Where(c => c.UtilisateurId == utilisateurId)
-                         .OrderByDescending(c => c.DateCommande)
-                         .ToListAsync();
+            .Include(c => c.LignesCommande)
+                .ThenInclude(l => l.Produit)
+            .Include(c => c.LignesCommande)
+                .ThenInclude(l => l.Producteur)
+            .Where(c => c.UtilisateurId == utilisateurId)
+            .OrderByDescending(c => c.DateCommande)
+            .ToListAsync();
 
     public async Task<IEnumerable<Commande>> GetByProducteurIdAsync(int producteurId)
         => await _context.Commandes
