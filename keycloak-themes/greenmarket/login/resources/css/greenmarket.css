@@ -60,17 +60,18 @@ a,
   outline-color: var(--gm-green);
 }
 
-/* --- Logo dans l'en-tête ---
-   Dépose ton logo dans resources/img/logo.png puis décommente.
-   Sinon, le nom du realm (displayName) s'affiche par défaut. */
-/*
-#kc-header-wrapper,
-.pf-v5-c-login__main-header {
-  background-image: url("../img/logo.png");
+/* --- Logo + nom dans l'en-tête ---
+   Logo feuille GreenMarket (logo.svg) centré au-dessus du nom du realm,
+   rendu vert et lisible. */
+#kc-header-wrapper {
+  color: var(--gm-green) !important;
+  font-size: 22px;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  line-height: 1.2;
+  padding-top: 56px;
+  background-image: url("../img/logo.svg");
   background-repeat: no-repeat;
   background-position: center top;
-  background-size: 180px auto;
-  padding-top: 90px;
-  color: transparent;
+  background-size: 44px 44px;
 }
-*/

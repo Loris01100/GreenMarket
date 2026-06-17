@@ -20,8 +20,11 @@ services:
 
   keycloak:
     restart: unless-stopped
-    # `start` (et non start-dev) ; pas de --optimized car l'image n'est pas pré-buildée
-    command: start --import-realm
+    # `start` (et non start-dev) ; pas de --optimized car l'image n'est pas pré-buildée.
+    # spi-theme-cache-themes=false + static-max-age=-1 : pas de cache de thème ni de
+    # long max-age sur /resources (sinon les modifs de thème restent masquées par le
+    # cache Keycloak ET par Cloudflare). À retirer/remonter une fois le thème figé.
+    command: start --import-realm --spi-theme-cache-themes=false --spi-theme-cache-templates=false --spi-theme-static-max-age=-1
     environment:
       KC_DB: postgres
       KC_DB_URL: jdbc:postgresql://postgres:5432/keycloak_db
