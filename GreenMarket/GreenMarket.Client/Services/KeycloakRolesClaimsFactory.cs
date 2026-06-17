@@ -31,20 +31,31 @@ public class KeycloakRolesClaimsFactory : AccountClaimsPrincipalFactory<RemoteUs
         if (user.Identity is not ClaimsIdentity identity)
             return user;
 
-        // 1) Claim "roles" déjà présent mais sous forme de tableau JSON multivalué
-        //    (ex: mapper Keycloak "User Realm Role" multivalué). On l'éclate.
-        var rolesClaims = identity.FindAll("roles").ToList();
-        foreach (var claim in rolesClaims)
+        // L'enrichissement des rôles ne doit JAMAIS faire échouer la pipeline d'auth :
+        // une exception ici remonte jusqu'à AuthorizeView et fait disparaître toute l'UI
+        // (y compris le bouton "Se connecter"). En cas de pépin, on dégrade : l'utilisateur
+        // reste authentifié mais sans rôle plutôt que de planter l'application.
+        try
         {
-            foreach (var role in ParseRoles(claim.Value))
+            // 1) Claim "roles" déjà présent mais sous forme de tableau JSON multivalué
+            //    (ex: mapper Keycloak "User Realm Role" multivalué). On l'éclate.
+            var rolesClaims = identity.FindAll("roles").ToList();
+            foreach (var claim in rolesClaims)
             {
-                if (!identity.HasClaim("roles", role))
-                    identity.AddClaim(new Claim("roles", role));
+                foreach (var role in ParseRoles(claim.Value))
+                {
+                    if (!identity.HasClaim("roles", role))
+                        identity.AddClaim(new Claim("roles", role));
+                }
             }
-        }
 
-        // 2) Rôles imbriqués dans realm_access.roles (présents si le token les inclut).
-        AddNestedRoles(account, identity, "realm_access");
+            // 2) Rôles imbriqués dans realm_access.roles (présents si le token les inclut).
+            AddNestedRoles(account, identity, "realm_access");
+        }
+        catch (Exception ex)
+        {
+            Console.Error.WriteLine($"[KeycloakRolesClaimsFactory] enrichissement des rôles ignoré : {ex}");
+        }
 
         return user;
     }
@@ -77,7 +88,7 @@ public class KeycloakRolesClaimsFactory : AccountClaimsPrincipalFactory<RemoteUs
                 }
             }
         }
-        catch (JsonException)
+        catch (Exception)
         {
             // Format inattendu : on ignore, l'utilisateur reste sans ce rôle.
         }
